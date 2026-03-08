@@ -1,47 +1,46 @@
-<p align="center">
-  <img src="public/img/Dashboard.png" alt="Vigil Dashboard" width="100%" />
-</p>
+```
+ ╦  ╦╦╔═╗╦╦
+ ╚╗╔╝║║ ╦║║
+  ╚╝ ╩╚═╝╩╩═╝
+```
 
-<h1 align="center">Vigil</h1>
+# Vigil
 
-<p align="center">
-  <strong>The Security Agency That Never Sleeps</strong><br>
-  AI-powered security operations platform — scanners, agents, incidents, compliance, MCP
-</p>
+**The Security Agency That Never Sleeps.**
 
-<p align="center">
-  <a href="https://github.com/vigil-agency/vigil/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License"></a>
-  <a href="https://github.com/vigil-agency/vigil/releases"><img src="https://img.shields.io/github/v/release/vigil-agency/vigil" alt="Release"></a>
-  <img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen" alt="Node">
-  <img src="https://img.shields.io/badge/dependencies-6-blue" alt="Dependencies">
-  <a href="https://github.com/vigil-agency/vigil/actions/workflows/ci.yml"><img src="https://github.com/vigil-agency/vigil/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://vigil.agency"><img src="https://img.shields.io/badge/website-vigil.agency-cyan" alt="Website"></a>
-</p>
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
+[![Node 18+](https://img.shields.io/badge/Node-18%2B-green.svg)](https://nodejs.org)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](Dockerfile)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-cyan.svg)](CONTRIBUTING.md)
 
-<p align="center">
-  <a href="#quick-start">Quick Start</a> •
-  <a href="#features">Features</a> •
-  <a href="#screenshots">Screenshots</a> •
-  <a href="#architecture">Architecture</a> •
-  <a href="#mcp-server">MCP Server</a> •
-  <a href="#contributing">Contributing</a> •
-  <a href="https://vigil.agency">Website</a>
-</p>
+Open-source, AI-powered security operations platform. Vulnerability scanning, autonomous agents, incident response, compliance tracking, and MCP server — all in a single Express.js process.
+
+Nmap + Nuclei + Trivy + Nikto + OpenSSL + DNS
+
+6 npm dependencies. No React. No build step. BYOK AI.
 
 ---
 
-## Why Vigil
+[Website](https://vigil.agency) | [GitHub](https://github.com/vigil-agency/vigil) | [Docs](https://vigil.agency/docs.html) | [Twitter](https://x.com/vigaborofficial)
 
-Most security teams fail audits because they lack a **repeatable workflow**, not because they lack tools.
+---
 
-Vigil combines automated scanners, AI-powered triage, autonomous agents, incident response, and compliance tracking into a single platform — with zero vendor lock-in.
+Built by [Autopilot AI Tech LLC](https://www.autopilotaitech.com)
 
-- **BYOK AI** — Bring your own Claude or Codex CLI subscription. Zero AI cost for the product.
-- **6 scanners built-in** — Nmap, Nuclei, Trivy, Nikto, OpenSSL, DNS/WHOIS
-- **20 autonomous agents** — Run parallel security campaigns
-- **MCP server** — 25+ tools, 3 resources, 4 prompts for Claude Desktop/Code/Cursor
+---
+
+## Features
+
+- **6 Built-in Scanners** — Nmap, Nuclei, Trivy, Nikto, OpenSSL, DNS/WHOIS — no external dependencies
+- **20 Autonomous Agents** — Run parallel security campaigns with scheduling
+- **Incident Response** — Full lifecycle workflow with playbooks, timeline, and AI postmortems
+- **Compliance Tracking** — SOC 2, ISO 27001, NIST 800-53, PCI-DSS, HIPAA
+- **MCP Server** — 25+ tools, 3 resources, 4 prompts for Claude Desktop/Code/Cursor
+- **BYOK AI** — Bring your own Claude or Codex CLI. Zero AI cost baked in
 - **Works without a database** — JSON file stores by default, optional PostgreSQL
-- **6 npm dependencies** — Express, Socket.IO, pg, node-pty, multer, MCP SDK
+- **RBAC + 2FA** — Admin, Analyst, Viewer roles with TOTP two-factor auth
+- **Credential Vault** — AES-256-GCM encrypted storage
+- **30 Views** — Glass-themed dashboard with real-time Socket.IO updates
 
 ## Quick Start
 
