@@ -334,6 +334,10 @@ module.exports = function (app, ctx) {
         findings.push(...pathChecks);
       }
 
+      // WAF detection (passive by default, active if scan_type is active)
+      const wafProbeMode = scan_type === 'active' ? 'active' : 'passive';
+      const wafResult = await detectWAF(target, wafProbeMode);
+
       // Also try nuclei if available
       const nucleiResult = await scannerEngine.runNuclei(target, { severity: 'critical,high,medium' });
       if (nucleiResult.available && nucleiResult.findings.length > 0) {
@@ -351,13 +355,14 @@ module.exports = function (app, ctx) {
         });
       }
 
-      saveScanResult('web', target, findings);
+      saveScanResult('web', target, findings.concat(wafResult.findings));
       res.json({
         target,
         alerts: findings,
         findings,
+        wafDetection: wafResult,
         total: findings.length,
-        scanner: nucleiResult.available ? 'nuclei+headers' : 'headers',
+        scanner: nucleiResult.available ? 'nuclei+headers+waf' : 'headers+waf',
         scannedAt: new Date().toISOString(),
       });
     } catch (e) {
@@ -754,6 +759,32 @@ Focus on: attack surface, email security posture, DNS hijacking risk, certificat
   });
 
   // ── Helper: save scan result to history ────────────────────────────────
+  // POST /api/scan/waf — WAF Detection endpoint
+  // ════════════════════════════════════════════════════════════════════════
+  app.post('/api/scan/waf', requireAuth, async (req, res) => {
+    try {
+      const { target, probe_mode } = req.body;
+      if (!target) return res.status(400).json({ error: 'target required' });
+      if (!isValidURL(target)) return res.status(400).json({ error: 'Invalid URL format. Use http:// or https://' });
+
+      const mode = probe_mode === 'active' ? 'active' : 'passive';
+      const result = await detectWAF(target, mode);
+
+      saveScanResult('waf', target, result.findings.map(f => ({
+        id: crypto.randomUUID(),
+        title: f.title,
+        severity: f.severity,
+        type: 'waf_detection',
+        status: 'open',
+        details: f.description,
+      })));
+
+      res.json(result);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   function saveScanResult(type, target, findings) {
     const scans = readJSON(SCANS_PATH, []);
     scans.push({
@@ -1024,4 +1055,309 @@ async function checkExposedPaths(targetUrl) {
   const results = await Promise.all(paths.map(checkPath));
   findings.push(...results.filter(Boolean));
   return findings;
+}
+
+
+// ── WAF Detection Engine (evilwaf-inspired) ────────────────────────────
+// Fingerprints 30+ WAF solutions via headers, cookies, response body, and status codes.
+// Pure Node.js — no external dependencies.
+
+const WAF_SIGNATURES = [
+  // CDN / Cloud WAFs
+  { name: 'Cloudflare', vendor: 'Cloudflare', headers: { 'server': /cloudflare/i, 'cf-ray': /.+/, 'cf-cache-status': /.+/ }, cookies: ['__cfduid', '__cf_bm', 'cf_clearance'], body: [/cloudflare/i, /attention required/i, /cf-error-details/i, /ray ID/i], codes: [403, 429, 503, 520, 521, 522, 523, 524, 525, 526] },
+  { name: 'AWS WAF', vendor: 'Amazon', headers: { 'x-amzn-requestid': /.+/, 'x-amz-cf-id': /.+/ }, cookies: ['awsalb', 'awsalbcors'], body: [/aws/i, /request blocked/i], codes: [403, 429] },
+  { name: 'AWS CloudFront', vendor: 'Amazon', headers: { 'x-amz-cf-id': /.+/, 'x-amz-cf-pop': /.+/, 'via': /CloudFront/i }, cookies: [], body: [/cloudfront/i], codes: [403] },
+  { name: 'Akamai', vendor: 'Akamai', headers: { 'server': /AkamaiGHost/i, 'x-akamai-transformed': /.+/ }, cookies: ['ak_bmsc', '_abck', 'bm_sv', 'bm_mi', 'akamai_g'], body: [/akamai/i, /reference.*#/i], codes: [403] },
+  { name: 'Google Cloud Armor', vendor: 'Google', headers: { 'server': /gws/i, 'x-goog-': /.+/ }, cookies: [], body: [/google cloud armor/i, /blocked by security policy/i], codes: [403, 429] },
+  { name: 'Azure WAF', vendor: 'Microsoft', headers: { 'server': /Microsoft-Azure/i, 'x-azure-ref': /.+/ }, cookies: [], body: [/azure/i, /web application firewall/i], codes: [403] },
+  { name: 'Fastly', vendor: 'Fastly', headers: { 'x-served-by': /cache-/i, 'x-fastly-request-id': /.+/, 'via': /varnish/i }, cookies: [], body: [/fastly/i], codes: [403, 429, 503] },
+  { name: 'Sucuri', vendor: 'GoDaddy', headers: { 'x-sucuri-id': /.+/, 'server': /Sucuri/i, 'x-sucuri-cache': /.+/ }, cookies: ['sucuri_cloudproxy_uuid'], body: [/sucuri/i, /access denied.*sucuri/i, /sucuri website firewall/i], codes: [403] },
+  // Traditional WAFs
+  { name: 'Imperva / Incapsula', vendor: 'Imperva', headers: { 'x-iinfo': /.+/, 'x-cdn': /Incapsula/i }, cookies: ['visid_incap_', 'incap_ses_', 'nlbi_'], body: [/incapsula/i, /imperva/i, /powered by incapsula/i], codes: [403] },
+  { name: 'F5 BIG-IP ASM', vendor: 'F5', headers: { 'server': /BIG-IP/i, 'x-cnection': /.+/, 'x-wa-info': /.+/ }, cookies: ['BIGipServer', 'TS0', 'f5_cspm', 'f5avraaaaaaa'], body: [/BIG-IP/i, /the requested URL was rejected/i, /support id/i], codes: [403] },
+  { name: 'FortiWeb', vendor: 'Fortinet', headers: { 'server': /FortiWeb/i, 'x-fortiweb-': /.+/ }, cookies: ['FORTIWAFSID'], body: [/fortiweb/i, /fortinet/i, /fortigate/i], codes: [403] },
+  { name: 'ModSecurity', vendor: 'Trustwave', headers: { 'server': /mod_security/i }, cookies: [], body: [/mod_security/i, /modsecurity/i, /not acceptable/i, /NOYB/i], codes: [403, 406] },
+  { name: 'Barracuda', vendor: 'Barracuda', headers: { 'server': /barracuda/i }, cookies: ['barra_counter_session', 'BNI__BARRACUDA_LB_COOKIE'], body: [/barracuda/i], codes: [403] },
+  { name: 'Citrix NetScaler', vendor: 'Citrix', headers: { 'via': /NS-CACHE/i, 'cneonction': /.+/, 'x-ns-': /.+/ }, cookies: ['NSC_', 'citrix_ns_id'], body: [/netscaler/i, /ns_af/i], codes: [403, 302] },
+  { name: 'Palo Alto', vendor: 'Palo Alto', headers: { 'x-pan-': /.+/ }, cookies: [], body: [/has been blocked/i, /palo alto/i], codes: [403] },
+  { name: 'DenyAll', vendor: 'DenyAll', headers: { 'server': /DenyAll/i }, cookies: ['sessioncookie'], body: [/denyall/i, /conditionblocked/i], codes: [403] },
+  { name: 'Wallarm', vendor: 'Wallarm', headers: { 'server': /wallarm/i, 'x-wallarm-': /.+/ }, cookies: [], body: [/wallarm/i], codes: [403] },
+  // Open-source / Nginx / Apache
+  { name: 'NAXSI', vendor: 'Open Source', headers: { 'server': /naxsi/i, 'x-naxsi-sig': /.+/ }, cookies: [], body: [/naxsi/i, /blocked by naxsi/i], codes: [403] },
+  { name: 'Comodo WAF', vendor: 'Comodo', headers: { 'server': /Comodo/i }, cookies: [], body: [/comodo/i, /protected by comodo/i], codes: [403] },
+  { name: 'StackPath', vendor: 'StackPath', headers: { 'x-sp-': /.+/, 'server': /StackPath/i }, cookies: [], body: [/stackpath/i, /secureedge/i], codes: [403] },
+  { name: 'Reblaze', vendor: 'Reblaze', headers: { 'server': /Reblaze/i, 'x-rb-': /.+/ }, cookies: ['rbzid'], body: [/reblaze/i, /access denied.*reblaze/i], codes: [403] },
+  { name: 'Edgecast / Verizon', vendor: 'Edgecast', headers: { 'server': /ECAcc/i, 'x-ec-': /.+/ }, cookies: [], body: [/edgecast/i], codes: [403] },
+  { name: 'KeyCDN', vendor: 'KeyCDN', headers: { 'server': /keycdn/i, 'x-edge-': /.+/ }, cookies: [], body: [/keycdn/i], codes: [403] },
+  { name: 'DataDome', vendor: 'DataDome', headers: { 'x-datadome': /.+/, 'server': /DataDome/i }, cookies: ['datadome'], body: [/datadome/i], codes: [403, 429] },
+  { name: 'PerimeterX / HUMAN', vendor: 'HUMAN', headers: { 'x-px-': /.+/ }, cookies: ['_px', '_pxhd', '_pxvid'], body: [/perimeterx/i, /human challenge/i, /px-captcha/i], codes: [403, 429] },
+  { name: 'Wordfence', vendor: 'Defiant', headers: {}, cookies: ['wfwaf-authcookie'], body: [/wordfence/i, /generated by wordfence/i, /a]potentially unsafe operation/i], codes: [403, 503] },
+  { name: 'AWS Shield', vendor: 'Amazon', headers: { 'x-amz-apigw-id': /.+/ }, cookies: [], body: [/aws shield/i], codes: [403, 429] },
+  { name: 'Radware', vendor: 'Radware', headers: { 'x-sl-compstate': /.+/ }, cookies: [], body: [/radware/i, /unauthorized activity/i], codes: [403] },
+  { name: 'Squarespace', vendor: 'Squarespace', headers: { 'x-servedby': /squarespace/i, 'server': /Squarespace/i }, cookies: [], body: [/squarespace/i], codes: [403] },
+];
+
+// Benign payloads that trigger WAF but are safe — used for active probing
+const WAF_PROBE_PAYLOADS = [
+  { name: 'XSS probe', param: 'q', value: '<script>alert(1)</script>' },
+  { name: 'SQLi probe', param: 'id', value: "' OR '1'='1" },
+  { name: 'Path traversal', param: 'file', value: '../../../../etc/passwd' },
+  { name: 'RCE probe', param: 'cmd', value: '; cat /etc/passwd' },
+];
+
+// Status codes that typically indicate WAF blocking
+const WAF_BLOCK_CODES = new Set([403, 406, 407, 409, 418, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526]);
+
+/**
+ * Detect WAF presence on a target URL
+ * @param {string} targetUrl - URL to probe
+ * @param {string} probeMode - 'passive' (headers only) or 'active' (send payloads)
+ * @returns {Promise<object>} - { detected, waf, confidence, evidence, findings }
+ */
+async function detectWAF(targetUrl, probeMode = 'passive') {
+  const url = new URL(targetUrl);
+  const proto = url.protocol === 'https:' ? require('https') : require('http');
+  const evidence = [];
+  const wafScores = {}; // waf name -> cumulative score
+  let responseHeaders = {};
+  let responseCookies = [];
+  let responseBody = '';
+  let statusCode = 0;
+  let tlsInfo = null;
+
+  // ── Phase 1: Fetch target and analyze response ──
+  try {
+    const result = await new Promise((resolve, reject) => {
+      const req = proto.get(targetUrl, { timeout: 10000, rejectUnauthorized: false }, (res) => {
+        let body = '';
+        res.on('data', chunk => { body += chunk.toString(); if (body.length > 50000) res.destroy(); });
+        res.on('end', () => resolve({ headers: res.headers, statusCode: res.statusCode, body, rawHeaders: res.rawHeaders, socket: res.socket }));
+      });
+      req.on('error', reject);
+      req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+    });
+
+    responseHeaders = result.headers;
+    statusCode = result.statusCode;
+    responseBody = result.body.substring(0, 50000);
+    responseCookies = (responseHeaders['set-cookie'] || []);
+    if (typeof responseCookies === 'string') responseCookies = [responseCookies];
+
+    // Extract TLS info if HTTPS
+    if (url.protocol === 'https:' && result.socket && result.socket.getPeerCertificate) {
+      try {
+        const cert = result.socket.getPeerCertificate();
+        if (cert && cert.issuer) {
+          tlsInfo = { issuer: cert.issuer.O || cert.issuer.CN || '', subject: cert.subject?.CN || '' };
+        }
+      } catch {}
+    }
+  } catch (e) {
+    return { detected: false, waf: null, confidence: 0, evidence: [{ method: 'error', detail: e.message }], findings: [] };
+  }
+
+  // ── Phase 2: Match against WAF signatures ──
+  for (const sig of WAF_SIGNATURES) {
+    let score = 0;
+
+    // Check response headers
+    for (const [headerName, pattern] of Object.entries(sig.headers)) {
+      // Check exact header names
+      const headerVal = responseHeaders[headerName.toLowerCase()];
+      if (headerVal && pattern.test(headerVal)) {
+        score += 30;
+        evidence.push({ waf: sig.name, method: 'header', detail: `${headerName}: ${headerVal}` });
+      }
+    }
+
+    // Check all response headers for partial matches (some WAFs add custom headers)
+    for (const [key, val] of Object.entries(responseHeaders)) {
+      if (key.toLowerCase().includes(sig.name.toLowerCase().split(' ')[0].toLowerCase()) && !evidence.find(e => e.waf === sig.name && e.detail.startsWith(key))) {
+        score += 15;
+        evidence.push({ waf: sig.name, method: 'header', detail: `${key}: ${val}` });
+      }
+    }
+
+    // Check cookies
+    const cookieStr = responseCookies.join(' ');
+    for (const cookieName of sig.cookies) {
+      if (cookieStr.toLowerCase().includes(cookieName.toLowerCase())) {
+        score += 25;
+        evidence.push({ waf: sig.name, method: 'cookie', detail: `Cookie: ${cookieName}` });
+      }
+    }
+
+    // Check response body
+    for (const pattern of sig.body) {
+      if (pattern.test(responseBody)) {
+        score += 20;
+        evidence.push({ waf: sig.name, method: 'body', detail: `Body matches: ${pattern.source}` });
+        break; // one body match is enough
+      }
+    }
+
+    // Check TLS certificate issuer
+    if (tlsInfo && tlsInfo.issuer) {
+      const issuerLower = tlsInfo.issuer.toLowerCase();
+      if (issuerLower.includes(sig.name.toLowerCase().split(' ')[0].toLowerCase())) {
+        score += 15;
+        evidence.push({ waf: sig.name, method: 'certificate', detail: `Cert issuer: ${tlsInfo.issuer}` });
+      }
+    }
+
+    if (score > 0) wafScores[sig.name] = (wafScores[sig.name] || 0) + score;
+  }
+
+  // ── Phase 3: Active probing (if enabled) ──
+  if (probeMode === 'active') {
+    for (const payload of WAF_PROBE_PAYLOADS) {
+      try {
+        const probeUrl = new URL(targetUrl);
+        probeUrl.searchParams.set(payload.param, payload.value);
+
+        const probeResult = await new Promise((resolve, reject) => {
+          const req = proto.get(probeUrl.href, { timeout: 8000, rejectUnauthorized: false }, (res) => {
+            let body = '';
+            res.on('data', chunk => { body += chunk.toString(); if (body.length > 10000) res.destroy(); });
+            res.on('end', () => resolve({ statusCode: res.statusCode, headers: res.headers, body }));
+          });
+          req.on('error', reject);
+          req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+        });
+
+        if (WAF_BLOCK_CODES.has(probeResult.statusCode) && probeResult.statusCode !== statusCode) {
+          // WAF blocked the probe — boost all existing scores or add generic detection
+          evidence.push({ waf: 'Active Probe', method: 'probe', detail: `${payload.name}: HTTP ${probeResult.statusCode} (normal: ${statusCode})` });
+
+          // Try to identify which WAF from the error response
+          for (const sig of WAF_SIGNATURES) {
+            for (const pattern of sig.body) {
+              if (pattern.test(probeResult.body)) {
+                wafScores[sig.name] = (wafScores[sig.name] || 0) + 35;
+                evidence.push({ waf: sig.name, method: 'probe_body', detail: `${payload.name} error page matches ${sig.name}` });
+                break;
+              }
+            }
+          }
+
+          // If no specific WAF matched, still record the block
+          if (!Object.keys(wafScores).length) {
+            wafScores['Unknown WAF'] = (wafScores['Unknown WAF'] || 0) + 25;
+          } else {
+            // Boost all matched WAFs
+            for (const waf of Object.keys(wafScores)) {
+              wafScores[waf] += 10;
+            }
+          }
+        }
+      } catch {}
+    }
+  }
+
+  // ── Phase 4: Score and rank results ──
+  const sortedWAFs = Object.entries(wafScores)
+    .map(([name, score]) => ({ name, score: Math.min(100, score), vendor: WAF_SIGNATURES.find(s => s.name === name)?.vendor || 'Unknown' }))
+    .sort((a, b) => b.score - a.score);
+
+  const primaryWAF = sortedWAFs.length > 0 ? sortedWAFs[0] : null;
+  const detected = primaryWAF && primaryWAF.score >= 15;
+
+  // Build findings array in Vigil schema
+  const findings = [];
+  if (detected) {
+    findings.push({
+      risk: 'info',
+      severity: 'info',
+      name: `WAF Detected: ${primaryWAF.name}`,
+      title: `WAF Detected: ${primaryWAF.name}`,
+      description: `${primaryWAF.name} (${primaryWAF.vendor}) detected with ${primaryWAF.score}% confidence. ` +
+        `Detection methods: ${[...new Set(evidence.filter(e => e.waf === primaryWAF.name).map(e => e.method))].join(', ')}`,
+      url: targetUrl,
+      solution: `WAF presence affects penetration testing strategy. Consider WAF-specific bypass techniques and ensure testing authorization covers WAF evasion. ` +
+        `Verify WAF rules are up-to-date and cover OWASP Top 10.`,
+      reference: '',
+    });
+
+    // Additional WAFs
+    sortedWAFs.slice(1).filter(w => w.score >= 15).forEach(waf => {
+      findings.push({
+        risk: 'info',
+        severity: 'info',
+        name: `Additional WAF/CDN: ${waf.name}`,
+        title: `Additional WAF/CDN: ${waf.name}`,
+        description: `${waf.name} (${waf.vendor}) detected with ${waf.score}% confidence`,
+        url: targetUrl,
+        solution: 'Multiple security layers detected — review WAF stack configuration',
+        reference: '',
+      });
+    });
+
+    // WAF bypass risk assessment
+    if (probeMode === 'active') {
+      const blockedProbes = evidence.filter(e => e.method === 'probe');
+      const totalProbes = WAF_PROBE_PAYLOADS.length;
+      const blockRate = blockedProbes.length / totalProbes;
+
+      if (blockRate >= 0.75) {
+        findings.push({
+          risk: 'info',
+          severity: 'info',
+          name: 'WAF Block Rate: Strong',
+          title: `WAF blocks ${Math.round(blockRate * 100)}% of test payloads`,
+          description: `${blockedProbes.length}/${totalProbes} attack probes were blocked. WAF appears to be effectively filtering common attack vectors.`,
+          url: targetUrl,
+          solution: 'WAF protection is active. Test with more advanced evasion techniques if authorized.',
+          reference: '',
+        });
+      } else if (blockRate > 0) {
+        findings.push({
+          risk: 'medium',
+          severity: 'medium',
+          name: 'WAF Block Rate: Partial',
+          title: `WAF blocks only ${Math.round(blockRate * 100)}% of test payloads`,
+          description: `Only ${blockedProbes.length}/${totalProbes} attack probes were blocked. Some common attack vectors may bypass the WAF.`,
+          url: targetUrl,
+          solution: 'Review WAF rule configuration — some attack patterns are not being caught.',
+          reference: '',
+        });
+      } else if (detected) {
+        findings.push({
+          risk: 'high',
+          severity: 'high',
+          name: 'WAF Detected but Not Blocking',
+          title: 'WAF present but not blocking attack payloads',
+          description: 'A WAF was detected via fingerprinting but none of the test payloads were blocked. The WAF may be in detection-only mode or misconfigured.',
+          url: targetUrl,
+          solution: 'Verify WAF is in active blocking mode. Review security rules and ensure OWASP CRS or equivalent rules are enabled.',
+          reference: '',
+        });
+      }
+    }
+  }
+
+  if (!detected) {
+    findings.push({
+      risk: 'medium',
+      severity: 'medium',
+      name: 'No WAF Detected',
+      title: 'No Web Application Firewall detected',
+      description: 'No WAF/CDN fingerprints found. The application may be directly exposed to the internet without WAF protection.',
+      url: targetUrl,
+      solution: 'Consider deploying a WAF (Cloudflare, AWS WAF, ModSecurity) to protect against common web attacks (SQLi, XSS, RCE).',
+      reference: '',
+    });
+  }
+
+  return {
+    detected,
+    waf: primaryWAF ? { name: primaryWAF.name, vendor: primaryWAF.vendor, confidence: primaryWAF.score } : null,
+    allWAFs: sortedWAFs.filter(w => w.score >= 15),
+    confidence: primaryWAF ? primaryWAF.score : 0,
+    evidence: evidence,
+    probeMode,
+    findings,
+    statusCode,
+    tlsInfo,
+    target: targetUrl,
+  };
 }
