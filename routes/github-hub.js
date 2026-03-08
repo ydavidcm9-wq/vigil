@@ -142,7 +142,7 @@ function getAccountToken(hub, accountId, vault) {
   if (!acct) return null;
   try {
     const cred = vault.getCredential(acct.credentialId);
-    return cred?.secret || null;
+    return cred?.value || null;
   } catch { return null; }
 }
 
@@ -169,13 +169,10 @@ module.exports = function (app, ctx) {
       const validation = await validateToken(token);
       if (!validation.valid) return res.status(400).json({ error: "Invalid token: " + (validation.error || "could not authenticate") });
 
-      let credentialId = null;
+      let credentialId = `github:${name.trim().toLowerCase().replace(/\s+/g, '-')}`;
       if (vault) {
-        credentialId = vault.addCredential({
-          name: `GitHub: ${name}`,
-          type: "api_token",
+        vault.storeCredential(credentialId, "api_token", token, {
           username: validation.username,
-          secret: token,
           tags: ["github-hub"]
         });
       }
@@ -214,7 +211,10 @@ module.exports = function (app, ctx) {
       hub.accounts[idx].username = validation.username;
       hub.accounts[idx].lastValidated = new Date().toISOString();
       if (hub.accounts[idx].credentialId) {
-        vault.updateCredential(hub.accounts[idx].credentialId, { secret: token, username: validation.username });
+        vault.storeCredential(hub.accounts[idx].credentialId, "api_token", token, {
+          username: validation.username,
+          tags: ["github-hub"]
+        });
       }
     }
 

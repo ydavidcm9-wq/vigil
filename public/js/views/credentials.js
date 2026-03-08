@@ -114,7 +114,7 @@ Views.credentials = {
       title: 'Add Credential',
       body:
         '<div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="cred-new-name" placeholder="e.g., api_key_production"></div>' +
-        '<div class="form-group"><label class="form-label">Type</label><select class="form-select" id="cred-new-type"><option value="api_key">API Key</option><option value="password">Password</option><option value="token">Token</option><option value="ssh_key">SSH Key</option><option value="certificate">Certificate</option><option value="generic">Generic</option></select></div>' +
+        '<div class="form-group"><label class="form-label">Type</label><select class="form-select" id="cred-new-type"><option value="api_token">API Token</option><option value="api_key">API Key</option><option value="password">Password</option><option value="token">Token</option><option value="ssh_key">SSH Key</option><option value="certificate">Certificate</option><option value="generic">Generic</option></select></div>' +
         '<div class="form-group"><label class="form-label">Value</label><textarea class="form-textarea" id="cred-new-value" rows="4" placeholder="Enter the secret value..." style="font-family:var(--font-mono);"></textarea></div>',
       footer: '<button class="btn btn-ghost" onclick="Modal.close()">Cancel</button><button class="btn btn-primary" id="cred-save-btn">Save</button>'
     });
