@@ -3,7 +3,7 @@
 ## Overview
 AI-powered security operations platform. Express.js + Socket.IO on port 4100.
 Vanilla JS frontend — no React, no build step, no bundler.
-~25 route modules | ~17 libs | 30 views | 200+ endpoints | 6 npm deps.
+~33 route modules | ~17 libs | 37 views | 200+ endpoints | 6 npm deps.
 License: AGPL-3.0
 
 ## Quick Start
@@ -47,7 +47,7 @@ sudo apt-get update && sudo apt-get install -y postgresql-client-17
 ### Server (orchestrator)
 ```
 server.js                    -> Express + Socket.IO setup, auth middleware, intervals, .env loader
-routes/                      -> ~25 route modules
+routes/                      -> ~33 route modules
 lib/                         -> ~17 shared modules
 data/                        -> Runtime JSON stores (scans, reports, notifications, agents,
                                 settings, audit-log)
@@ -58,11 +58,12 @@ docs/                        -> Documentation
 ### .env Loader (built-in, no dotenv dependency)
 Custom parser in server.js reads `security/.env` at startup. Sets `process.env[key]` only for keys not already set. Supports `KEY=VALUE` format, ignores comments (#) and blank lines.
 
-### Route Modules (~25)
+### Route Modules (~33)
 ```
 auth.js                -> Login, logout, session, 2FA setup/verify
 system.js              -> CPU, memory, disk, processes, server info
 scans.js               -> Scan orchestration, scheduling, history
+scan-api.js            -> Web/SSL/WAF scanning bridge, WAF detection engine (30+ signatures)
 nmap.js                -> Nmap network scanning (ports, hosts, services)
 nuclei.js              -> Nuclei vulnerability scanning (templates, severity)
 trivy.js               -> Trivy container/filesystem/image scanning
@@ -85,6 +86,8 @@ notifications.js       -> Notification system (email, webhook, Slack)
 settings.js            -> Platform configuration, user preferences
 mcp.js                 -> MCP server (Streamable HTTP, 25+ tools, resources, prompts)
 health.js              -> Health check endpoint, service status
+code-audit.js          -> LLM-driven source code vulnerability scanning (Vulnhuntr-inspired)
+ephemeral-infra.js     -> Disposable proxy node management (fluffy-barnacle-inspired)
 ```
 
 ### Lib Modules (~17)
@@ -106,12 +109,14 @@ docker-engine.js       -> Native Docker Engine API client
 credential-vault.js    -> AES-256-GCM encrypted credential storage
 notification-sender.js -> Push notifications via Socket.IO
 neural-cache.js        -> Intelligent caching layer
+code-audit.js          -> LLM-driven code vulnerability scanner (7 vuln types, confidence scoring)
+ephemeral-proxy.js     -> Disposable Codespace proxy management (SOCKS5 tunnels, lifecycle)
 ```
 
 ### Frontend (ViewRegistry pattern)
 ```
 public/
-  index.html                 -> Shell: head, sidebar, 30 view containers
+  index.html                 -> Shell: head, sidebar, 37 view containers
   css/
     theme.css                -> Vigil Dark + CSS variables (glass treatment)
     layout.css               -> Glass sidebar, topbar, content grid, status bar
@@ -124,10 +129,10 @@ public/
     charts.js                -> Chart.js wrappers (vulnerability trends, scan history)
     modal.js                 -> Modal.open/close/confirm/loading
     toast.js                 -> Toast notification system
-    views/                   -> 30 self-registering view modules
+    views/                   -> 37 self-registering view modules
 ```
 
-## 30 Sidebar Views
+## 37 Sidebar Views
 
 ### Overview
 | View | File | Description |
@@ -142,9 +147,12 @@ public/
 | Network Scan | `views/network-scan.js` | Nmap port scanning, host discovery, service detection |
 | Vuln Scan | `views/vuln-scan.js` | Nuclei vulnerability scanning with template selection |
 | Container Scan | `views/container-scan.js` | Trivy image/filesystem scanning, SBOM generation |
-| Web Scan | `views/web-scan.js` | Nikto web server scanning, OWASP checks |
+| Web Scanner | `views/web-scanner.js` | Web scanning + WAF Detection tab (30+ WAF signatures) |
 | SSL Audit | `views/ssl-audit.js` | OpenSSL certificate chain analysis, cipher suite grading |
 | DNS Recon | `views/dns-recon.js` | DNS enumeration, zone transfer, WHOIS lookup |
+| DNS Security | `views/dns-security.js` | DNS security analysis, DNSSEC validation |
+| Code Audit | `views/code-audit.js` | LLM-driven source code vulnerability scanning |
+| Proxy Nodes | `views/proxy-nodes.js` | Disposable Codespace proxies for anonymous scanning |
 | Scan History | `views/scan-history.js` | All scan results, filtering, comparison, export |
 | Scheduled Scans | `views/scheduled-scans.js` | Cron-based recurring scan configuration |
 
@@ -333,6 +341,8 @@ Modal.close();
 | `metrics` | `{ system: {cpuPct, usedMemPct, usedMemMB, totalMemMB, ...}, ts }` | 3s |
 | `scan_progress` | `{ scanId, type, progress, status }` | during scan |
 | `scan_complete` | `{ scanId, type, results, summary }` | on scan finish |
+| `code_audit_progress` | `{ scanId, phase, message }` | during code audit |
+| `proxy_node_update` | `{ action, name, node? }` | on proxy node change |
 | `alert` | `{ id, severity, message, source, ts }` | on trigger |
 | `threat_update` | `{ threats: [] }` | 30s |
 | `posture_update` | `{ score, breakdown }` | 60s |
@@ -379,6 +389,8 @@ Users bring their own AI subscriptions. The app shells out to locally-installed 
 - Security policy generation from description
 - Daily threat briefing summaries
 - Natural language to scanner command translation
+- LLM-driven code vulnerability scanning (Vulnhuntr-inspired zero-shot analysis)
+- AI finding analysis (per-finding deep-dive from Findings view)
 
 ## Scanner Integrations
 
@@ -419,6 +431,30 @@ Users bring their own AI subscriptions. The app shells out to locally-installed 
 - Outdated software identification
 - HTTP method testing
 - Server header analysis
+
+### WAF Detection (evilwaf-inspired)
+- 30+ WAF signature database (Cloudflare, AWS WAF, Akamai, Imperva, F5, ModSecurity, etc.)
+- 4 detection vectors: response headers, cookies, body patterns, TLS cert issuer
+- Passive mode (header analysis only) + Active mode (benign probe payloads)
+- Auto-runs during full web scans; standalone via `POST /api/scan/waf`
+- Integrated as tab within Web Scanner view (no new sidebar item)
+
+### Code Audit (Vulnhuntr-inspired)
+- LLM-driven zero-shot source code vulnerability discovery
+- 7 vulnerability types: RCE, SQLi, XSS, SSRF, LFI, AFO, IDOR (CWE/MITRE mapped)
+- 3-phase algorithm: file discovery → AI triage → deep analysis with confidence scoring
+- Supports JS, TS, Python, Ruby, PHP, Java, Go, C#
+- Findings normalized to standard scan format, visible in Findings view
+- API: `POST /api/code-audit`, `GET /api/code-audit/:id`, `POST /api/code-audit/preview`
+
+### Proxy Nodes (fluffy-barnacle-inspired)
+- GitHub Codespaces as disposable SOCKS5 proxy nodes for anonymous scanning
+- Full lifecycle: create, start, stop, delete Codespaces via `gh` CLI
+- SSH dynamic port forwarding (`gh codespace ssh -D`) for SOCKS5 proxy
+- Exit IP detection via ifconfig.me through the proxy
+- AI infrastructure planner for engagement-based proxy recommendations
+- Requires `gh` CLI installed and authenticated; graceful degradation when absent
+- API: `GET /api/proxy-nodes`, `POST /api/proxy-nodes`, `POST /api/proxy-nodes/ai-plan`
 
 ## Auth
 - PBKDF2 password hashing (lib/users.js)

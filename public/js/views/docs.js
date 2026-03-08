@@ -287,7 +287,80 @@ Views.docs = {
       /* DNS Recon */
       '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">DNS Recon</h3>' +
       '<p>DNS enumeration: A, AAAA, MX, NS, TXT, SOA, CNAME records. WHOIS lookup and zone transfer testing.</p>' +
-      '<p><strong>Q: What is a zone transfer test?</strong><br>A: Tests if the DNS server allows AXFR queries, which would expose all DNS records. A successful zone transfer is a misconfiguration finding that attackers exploit for reconnaissance.</p>',
+      '<p><strong>Q: What is a zone transfer test?</strong><br>A: Tests if the DNS server allows AXFR queries, which would expose all DNS records. A successful zone transfer is a misconfiguration finding that attackers exploit for reconnaissance.</p>' +
+
+      /* Web Scanner + WAF Detection */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Web Scanner &amp; WAF Detection</h3>' +
+      '<p>Web application scanning with integrated WAF (Web Application Firewall) detection. Two tabs: <strong>Findings</strong> for web vulnerabilities and <strong>WAF Detection</strong> for firewall fingerprinting.</p>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">WAF Detection Features:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>30+ WAF Signatures</strong> &mdash; Cloudflare, AWS WAF/CloudFront, Akamai, Imperva, F5, FortiWeb, ModSecurity, Barracuda, Sucuri, Google Cloud Armor, Fastly, and more.</li>' +
+        '<li><strong>4 Detection Vectors</strong> &mdash; Response headers, cookies, HTML body patterns, TLS certificate issuer analysis.</li>' +
+        '<li><strong>Passive Mode</strong> &mdash; Analyzes headers from a single GET request. No payloads sent. Safe for initial recon.</li>' +
+        '<li><strong>Active Mode</strong> &mdash; Sends benign probe payloads (XSS, SQLi, path traversal, RCE) to trigger WAF responses. Only use with authorization.</li>' +
+      '</ul>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">How to use:</p>' +
+      '<ol style="padding-left:20px;">' +
+        '<li>Enter a target URL in the Web Scanner</li>' +
+        '<li><strong>Full Scan</strong> runs web vuln scan + auto WAF detection (results in both tabs)</li>' +
+        '<li><strong>WAF Scan</strong> runs WAF-only detection (~5 seconds, no vulnerability scanning)</li>' +
+        '<li>Results show: detected WAF name/vendor, confidence %, evidence details, and findings</li>' +
+      '</ol>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">FAQ:</p>' +
+      '<p><strong>Q: Does WAF detection work without Nuclei installed?</strong><br>A: Yes. WAF detection is pure Node.js &mdash; no external scanner needed. It uses native HTTP/TLS modules to fingerprint WAFs.</p>' +
+      '<p><strong>Q: Why does my full web scan take so long?</strong><br>A: Full scans run Nuclei with 9000+ templates, which can take 5+ minutes. Use the standalone WAF Scan button for quick (~5s) WAF-only detection.</p>' +
+
+      /* Code Audit */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Code Audit (LLM-Powered)</h3>' +
+      '<p>AI-driven source code vulnerability scanner inspired by Vulnhuntr. Analyzes source files for 7 vulnerability types using a 3-phase algorithm: file discovery, AI triage, and deep analysis with confidence scoring.</p>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Vulnerability Types:</p>' +
+      '<table class="data-table"><thead><tr><th>Type</th><th>Name</th><th>CWE</th></tr></thead><tbody>' +
+        '<tr><td style="color:var(--text-primary);">RCE</td><td>Remote Code Execution</td><td>CWE-94</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">SQLi</td><td>SQL Injection</td><td>CWE-89</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">XSS</td><td>Cross-Site Scripting</td><td>CWE-79</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">SSRF</td><td>Server-Side Request Forgery</td><td>CWE-918</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">LFI</td><td>Local File Inclusion</td><td>CWE-98</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">AFO</td><td>Arbitrary File Overwrite</td><td>CWE-73</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">IDOR</td><td>Insecure Direct Object Ref</td><td>CWE-639</td></tr>' +
+      '</tbody></table>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">How to use:</p>' +
+      '<ol style="padding-left:20px;">' +
+        '<li>Navigate to <strong>Scanning &gt; Code Audit</strong></li>' +
+        '<li>Enter a target directory path (e.g., <code style="background:var(--well);padding:1px 4px;border-radius:3px;">/app/routes</code> in Docker)</li>' +
+        '<li>Optionally select languages (JS, TS, Python, etc.) and vulnerability types to check</li>' +
+        '<li>Click <strong>Preview Files</strong> to see what will be scanned before committing</li>' +
+        '<li>Click <strong>Run Code Audit</strong> &mdash; runs in background with real-time progress</li>' +
+        '<li>Results show severity, confidence (1-10), data flow traces, PoC exploits, and remediation</li>' +
+        '<li>All findings auto-appear in the <strong>Findings</strong> view (filter by "Code Audit" type)</li>' +
+      '</ol>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">FAQ:</p>' +
+      '<p><strong>Q: What languages are supported?</strong><br>A: JavaScript, TypeScript, Python, Ruby, PHP, Java, Go, and C#. Supports .js, .mjs, .cjs, .ts, .tsx, .py, .rb, .php, .java, .go, .cs extensions.</p>' +
+      '<p><strong>Q: How long does a scan take?</strong><br>A: Depends on file count. Preview first to check. Small projects (5-10 files): ~1 minute. Larger projects (30-50 files): 3-5 minutes. Each batch of files requires an AI call (~30-90 seconds).</p>' +
+      '<p><strong>Q: Does this require AI to be configured?</strong><br>A: Yes. Code Audit uses the AI provider configured in Settings. It sends source code to the LLM for analysis. Ensure your AI provider is set up and working before running code audits.</p>' +
+
+      /* Proxy Nodes */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Proxy Nodes (Ephemeral Infrastructure)</h3>' +
+      '<p>Disposable scanning infrastructure using GitHub Codespaces. Each node provides a unique exit IP via SOCKS5 proxy, enabling anonymous scanning during authorized penetration tests. Inspired by fluffy-barnacle.</p>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">How it works:</p>' +
+      '<ol style="padding-left:20px;">' +
+        '<li><strong>Create Node</strong> &mdash; Provisions a disposable GitHub Codespace (from <code style="background:var(--well);padding:1px 4px;border-radius:3px;">github/codespaces-blank</code>)</li>' +
+        '<li><strong>Connect</strong> &mdash; Starts SOCKS5 tunnel via <code style="background:var(--well);padding:1px 4px;border-radius:3px;">gh codespace ssh -D 127.0.0.1:1080</code></li>' +
+        '<li><strong>Scan</strong> &mdash; Route scanning tools through the SOCKS5 proxy for a different exit IP</li>' +
+        '<li><strong>Rotate</strong> &mdash; Delete the node and create a new one for a fresh IP</li>' +
+        '<li><strong>Teardown</strong> &mdash; Delete the Codespace when done. Zero traces.</li>' +
+      '</ol>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Prerequisites:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>GitHub CLI (gh)</strong> &mdash; Must be installed and authenticated. See Scanner Setup section.</li>' +
+        '<li><strong>GitHub Account</strong> &mdash; Free tier includes 120 core-hours/month of Codespaces.</li>' +
+      '</ul>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">AI Infrastructure Planner:</p>' +
+      '<p>Describe your engagement (target scope, testing window, scan types) and AI will recommend: number of proxy nodes, IP rotation frequency, OPSEC level, scan strategy (sequential/parallel/round-robin), and which scan phases should use proxying vs direct connection.</p>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">FAQ:</p>' +
+      '<p><strong>Q: How do I set up GitHub CLI?</strong><br>A: Install with <code style="background:var(--well);padding:1px 4px;border-radius:3px;">apt install gh</code>, then authenticate with <code style="background:var(--well);padding:1px 4px;border-radius:3px;">gh auth login</code>. Select GitHub.com, HTTPS, and "Login with a web browser." Open the device URL on any browser, enter the code, and authorize. See Scanner Setup for full instructions.</p>' +
+      '<p><strong>Q: Is this free?</strong><br>A: GitHub free accounts include 120 core-hours/month of Codespaces. A basic node (2-core) costs 2 core-hours per hour. That gives ~60 hours of proxy time per month at no cost.</p>' +
+      '<p><strong>Q: Do I need gh CLI in the Docker container?</strong><br>A: Yes. The Vigil Docker image includes gh CLI pre-installed. You just need to authenticate it once: <code style="background:var(--well);padding:1px 4px;border-radius:3px;">docker exec -it vigil gh auth login</code>. Or mount your host config: <code style="background:var(--well);padding:1px 4px;border-radius:3px;">~/.config/gh:/home/vigil/.config/gh:ro</code> in docker-compose.yml volumes.</p>' +
+      '<p><strong>Q: What if gh CLI is not installed?</strong><br>A: The Proxy Nodes view shows a Prerequisites panel with setup instructions. All other Vigil features work normally without gh.</p>',
 
 
     /* ===== AGENTS & CAMPAIGNS ===== */
@@ -755,6 +828,10 @@ Views.docs = {
       '<h3 style="color:var(--cyan);margin:16px 0 8px;">AI CLI Tools (BYOK)</h3>' +
       '<div class="code-block" style="margin-bottom:12px;"># Claude Code (requires Anthropic subscription)\nnpm install -g @anthropic-ai/claude-code\n\n# Codex CLI (requires OpenAI API key)\nnpm install -g @openai/codex\n\n# Verify\nclaude --version\ncodex --version</div>' +
       '<p>After installing, go to <strong>Settings &gt; AI Provider</strong> and select your preferred CLI. All AI features (triage, hunting, playbooks, analysis, summaries) use your AI subscription through these CLI tools.</p>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">GitHub CLI (Proxy Nodes)</h3>' +
+      '<div class="code-block" style="margin-bottom:12px;"># Ubuntu/Debian\ncurl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg\necho "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list\nsudo apt update && sudo apt install gh\n\n# macOS\nbrew install gh\n\n# Authenticate\ngh auth login\n# Select: GitHub.com > HTTPS > Login with web browser\n# Open the device URL in your browser, enter the code\n\n# Verify\ngh auth status</div>' +
+      '<p>GitHub CLI is required for the <strong>Proxy Nodes</strong> feature (ephemeral Codespace infrastructure). Pre-installed in the Vigil Docker image. Authenticate inside the container with <code style="background:var(--well);padding:1px 4px;border-radius:3px;">docker exec -it vigil gh auth login</code>, or mount host credentials via volumes: <code style="background:var(--well);padding:1px 4px;border-radius:3px;">~/.config/gh:/home/vigil/.config/gh:ro</code></p>' +
 
       '<h3 style="color:var(--cyan);margin:16px 0 8px;">Docker (Container Scanning)</h3>' +
       '<div class="code-block" style="margin-bottom:12px;"># Install Docker\ncurl -fsSL https://get.docker.com | sudo sh\n\n# Add user to docker group\nsudo usermod -aG docker $USER\n\n# Verify\ndocker --version</div>' +

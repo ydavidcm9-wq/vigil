@@ -174,6 +174,7 @@
     'ssl-monitor': 'SSL Monitor',
     'dns-security': 'DNS Security',
     'code-audit': 'Code Audit',
+    'proxy-nodes': 'Proxy Nodes',
     'osint': 'OSINT',
     'findings': 'Findings',
     'timeline': 'Attack Timeline',
