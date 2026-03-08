@@ -44,6 +44,10 @@ RUN NUCLEI_VER=$(curl -sL https://api.github.com/repos/projectdiscovery/nuclei/r
 RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin && \
     echo "Trivy installed" || echo "WARNING: Could not install trivy"
 
+# Claude Code CLI (piggybacks off host's Max subscription via mounted credentials)
+RUN npm install -g @anthropic-ai/claude-code && \
+    echo "Claude Code CLI installed" || echo "WARNING: Could not install claude CLI"
+
 # Non-root user (no sudo in production)
 RUN useradd -m -s /bin/bash vigil
 

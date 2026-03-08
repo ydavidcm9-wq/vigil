@@ -354,10 +354,19 @@ Modal.close();
 Users bring their own AI subscriptions. The app shells out to locally-installed CLI tools -- zero AI cost for the product.
 
 ### Supported Providers (Settings > AI Provider)
-- **Claude CLI** (`claude --print`) -- requires Anthropic subscription
+- **Claude API** (`claude-api`) -- direct Anthropic Messages API (requires ANTHROPIC_API_KEY)
+- **Claude CLI** (`claude --print`) -- requires Anthropic subscription or Claude Max
 - **Claude Code** (`claude`) -- requires Claude Max subscription
 - **Codex CLI** (`codex`) -- OpenAI's open-source coding agent, requires OpenAI API key
 - **None** -- AI features disabled, graceful degradation
+
+### Docker AI Setup (Max Subscription)
+- Claude CLI installed globally in container (`npm install -g @anthropic-ai/claude-code`)
+- Host OAuth credentials mounted read-only: `~/.claude/.credentials.json:/home/vigil/.claude/.credentials.json:ro`
+- `CLAUDECODE` env var stripped before spawning CLI (prevents nested-instance refusal)
+- Uses `execFileSafe()` (not shell) to avoid backtick/pipe issues in prompts
+- `child.stdin.end()` called after spawn to prevent CLI hanging
+- Timeout: 120s default (complex prompts with README content need 60-90s)
 
 ### AI-Powered Features
 - Vulnerability triage and prioritization
