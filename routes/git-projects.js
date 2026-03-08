@@ -40,13 +40,13 @@ function getGitEnv(project) {
   try {
     const cred = vault.getCredential(project.credentialId);
     if (!cred) return env;
-    if (cred.type === 'ssh_key' && cred.secret) {
+    if (cred.type === 'ssh_key' && cred.value) {
       const tmpKey = path.join(__dirname, '..', 'data', '.git-ssh-key-' + project.id);
-      fs.writeFileSync(tmpKey, cred.secret, { mode: 0o600 });
+      fs.writeFileSync(tmpKey, cred.value, { mode: 0o600 });
       env.GIT_SSH_COMMAND = `ssh -i "${tmpKey}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null`;
-    } else if (cred.type === 'api_token' && cred.secret) {
+    } else if (cred.type === 'api_token' && cred.value) {
       env.GIT_ASKPASS = 'echo';
-      env.GIT_TOKEN = cred.secret;
+      env.GIT_TOKEN = cred.value;
     }
   } catch {}
   return env;
@@ -57,8 +57,8 @@ function getAuthRemoteUrl(project) {
   if (!project || !project.credentialId || !project.remoteUrl) return null;
   try {
     const cred = vault.getCredential(project.credentialId);
-    if (cred && cred.type === 'api_token' && cred.secret) {
-      return project.remoteUrl.replace(/^https:\/\//, 'https://' + cred.secret + '@');
+    if (cred && cred.type === 'api_token' && cred.value) {
+      return project.remoteUrl.replace(/^https:\/\//, 'https://' + cred.value + '@');
     }
   } catch {}
   return null;
