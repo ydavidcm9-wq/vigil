@@ -1,0 +1,11 @@
+{
+  "name": "security-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kali Linux security tools REST API bridge",
+  "main": "bridge.js",
+  "dependencies": {
+    "express": "^4.21.2",
+    "fast-xml-parser": "^4.5.1"
+  }
+}

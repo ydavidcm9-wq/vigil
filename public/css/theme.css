@@ -1,0 +1,142 @@
+/* Vigil Dark Theme — Orange Neon + Charcoal */
+
+:root {
+  --canvas: #0a0a0a;
+  --surface: rgba(18, 18, 18, 0.65);
+  --surface-solid: #121212;
+  --surface-hover: rgba(26, 26, 26, 0.80);
+  --well: rgba(0, 0, 0, 0.35);
+  --text-primary: #e4e4e7;
+  --text-secondary: #8b8b92;
+  --text-tertiary: #52525a;
+  --border: rgba(255, 255, 255, 0.06);
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-top: rgba(255, 255, 255, 0.12);
+  --accent: #ff6b2b;
+  --accent-dim: rgba(255, 107, 43, 0.15);
+  --accent-glow: rgba(255, 107, 43, 0.25);
+  --cyan: #ff6b2b;
+  --cyan-dim: rgba(255, 107, 43, 0.15);
+  --cyan-glow: rgba(255, 107, 43, 0.25);
+  --orange: #ef4444;
+  --orange-dim: rgba(239, 68, 68, 0.15);
+  --orange-glow: rgba(239, 68, 68, 0.25);
+  --purple: #a78bfa;
+  --purple-dim: rgba(167, 139, 250, 0.15);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 13px;
+  --font-size-lg: 15px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 24px;
+  --sidebar-width: 240px;
+  --sidebar-collapsed: 52px;
+  --topbar-height: 52px;
+  --statusbar-height: 28px;
+}
+
+/* Reset */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  background: var(--canvas);
+  line-height: 1.6;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+button, input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  border: none;
+  outline: none;
+  background: none;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 107, 43, 0.12);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 107, 43, 0.22);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 107, 43, 0.12) transparent;
+}
+
+/* Selection */
+::selection {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+::-moz-selection {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+/* Focus visible */
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}

@@ -1,0 +1,28 @@
+node_modules/
+.env
+.env.local
+.env.*
+!.env.example
+
+# Runtime data (JSON file stores)
+data/*.json
+data/reports/
+data/backups/
+!data/.gitkeep
+!data/agents.json
+
+# Build artifacts
+.next/
+*.tsbuildinfo
+
+# OS/IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Media (screenshots for re-taking before release)
+media/
+
+# Landing page (separate repo: vigil-agency.github.io)
+landing/

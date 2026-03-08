@@ -1,0 +1,683 @@
+/* Vigil v1.0 — Documentation View */
+Views.docs = {
+  _activeSection: 'getting-started',
+
+  init: function() {
+    var el = document.getElementById('view-docs');
+    el.innerHTML =
+      '<div class="section-header">' +
+        '<div class="section-title">Documentation</div>' +
+      '</div>' +
+
+      '<div class="two-panel">' +
+        '<div class="two-panel-left glass-card" style="padding:12px;">' +
+          '<div style="font-weight:600;color:var(--text-primary);margin-bottom:12px;padding:0 8px;">Contents</div>' +
+          '<div class="nav-item active doc-nav-item" data-doc="getting-started"><span class="nav-item-icon">&#9654;</span><span class="nav-item-label">Getting Started</span></div>' +
+          '<div class="nav-item doc-nav-item" data-doc="overview"><span class="nav-item-icon">&#128200;</span><span class="nav-item-label">Overview Views</span></div>' +
+          '<div class="nav-item doc-nav-item" data-doc="intelligence"><span class="nav-item-icon">&#128373;</span><span class="nav-item-label">Intelligence &amp; Hunting</span></div>' +
+          '<div class="nav-item doc-nav-item" data-doc="scanning"><span class="nav-item-icon">&#128737;</span><span class="nav-item-label">Scanning &amp; Findings</span></div>' +
+          '<div class="nav-item doc-nav-item" data-doc="agents"><span class="nav-item-icon">&#129302;</span><span class="nav-item-label">Agents &amp; Campaigns</span></div>' +
+          '<div class="nav-item doc-nav-item" data-doc="incidents"><span class="nav-item-icon">&#128680;</span><span class="nav-item-label">Incidents &amp; Playbooks</span></div>' +
+          '<div class="nav-item doc-nav-item" data-doc="compliance"><span class="nav-item-icon">&#9989;</span><span class="nav-item-label">Compliance &amp; Reports</span></div>' +
+          '<div class="nav-item doc-nav-item" data-doc="tools"><span class="nav-item-icon">&#128295;</span><span class="nav-item-label">Terminal, OSINT &amp; MCP</span></div>' +
+          '<div class="nav-item doc-nav-item" data-doc="system"><span class="nav-item-icon">&#9881;</span><span class="nav-item-label">Settings &amp; System</span></div>' +
+          '<div class="nav-item doc-nav-item" data-doc="api"><span class="nav-item-icon">&#128268;</span><span class="nav-item-label">API Reference</span></div>' +
+          '<div class="nav-item doc-nav-item" data-doc="scanners"><span class="nav-item-icon">&#128187;</span><span class="nav-item-label">Scanner Setup</span></div>' +
+        '</div>' +
+
+        '<div class="two-panel-right glass-card" id="docs-content" style="line-height:1.8;color:var(--text-secondary);font-size:var(--font-size-sm);">' +
+        '</div>' +
+      '</div>';
+
+    var self = this;
+    document.querySelectorAll('.doc-nav-item').forEach(function(item) {
+      item.addEventListener('click', function() {
+        document.querySelectorAll('.doc-nav-item').forEach(function(i) { i.classList.remove('active'); });
+        item.classList.add('active');
+        self._activeSection = item.getAttribute('data-doc');
+        self.renderSection();
+      });
+    });
+  },
+
+  show: function() {
+    this.renderSection();
+  },
+
+  hide: function() {},
+
+  renderSection: function() {
+    var container = document.getElementById('docs-content');
+    var content = this._docs[this._activeSection] || '<p>Section not found.</p>';
+    container.innerHTML = content;
+    container.scrollTop = 0;
+  },
+
+  _img: function(src, alt) {
+    return '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/' + src + '" alt="' + alt + '" style="width:100%;display:block;" loading="lazy"></div>';
+  },
+
+  _docs: {
+    'getting-started':
+      '<h2 style="color:var(--text-primary);font-size:var(--font-size-xl);margin-bottom:16px;">Getting Started with Vigil</h2>' +
+      '<h3 style="color:var(--text-primary);font-size:var(--font-size-lg);margin:16px 0 8px;">Quick Start</h3>' +
+      '<div class="code-block" style="margin-bottom:16px;">cd vigil && npm install && npm start\n# Access: http://localhost:4100\n# Default: admin / admin (change immediately)</div>' +
+      '<h3 style="color:var(--text-primary);font-size:var(--font-size-lg);margin:16px 0 8px;">Requirements</h3>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li>Node.js 20+</li>' +
+        '<li>Optional: nmap, nuclei, trivy, nikto, openssl (for scanning)</li>' +
+        '<li>Optional: Claude CLI or Codex CLI (for AI features)</li>' +
+        '<li>Optional: PostgreSQL 17 (falls back to JSON file stores)</li>' +
+      '</ul>' +
+      '<h3 style="color:var(--text-primary);font-size:var(--font-size-lg);margin:16px 0 8px;">First Steps</h3>' +
+      '<ol style="padding-left:20px;list-style:decimal;">' +
+        '<li style="margin-bottom:6px;">Log in with default credentials (<strong>admin / admin</strong>)</li>' +
+        '<li style="margin-bottom:6px;">Go to <strong>Settings &gt; Account</strong> and change your password</li>' +
+        '<li style="margin-bottom:6px;">Go to <strong>Settings &gt; AI Provider</strong> and select Claude CLI, Claude Code, or Codex CLI</li>' +
+        '<li style="margin-bottom:6px;">Go to <strong>Settings &gt; Scanners</strong> to verify installed tools (nmap, nuclei, trivy)</li>' +
+        '<li style="margin-bottom:6px;">Navigate to <strong>Dashboard</strong> to see your security posture score</li>' +
+        '<li style="margin-bottom:6px;">Run your first scan from <strong>Port Scanner</strong> or <strong>Vuln Scanner</strong></li>' +
+        '<li style="margin-bottom:6px;">Open <strong>Threat Hunt</strong> and enter a hypothesis to see AI investigation in action</li>' +
+      '</ol>' +
+      '<h3 style="color:var(--text-primary);font-size:var(--font-size-lg);margin:16px 0 8px;">BYOK AI Model</h3>' +
+      '<p>Vigil uses a <strong>Bring Your Own Key</strong> model. All AI features shell out to locally-installed CLI tools (Claude CLI, Claude Code, Codex CLI). There is zero AI cost to the product itself &mdash; you use your own subscription. Without an AI CLI configured, all views still work but AI-powered features (triage, hunting, playbooks, analysis) degrade gracefully with placeholder messages.</p>' +
+      '<h3 style="color:var(--text-primary);font-size:var(--font-size-lg);margin:16px 0 8px;">Architecture</h3>' +
+      '<p>Express.js + Socket.IO with a vanilla JS frontend. No React, no build step, no bundler. 25 route modules, 17 libs, 30+ views, 200+ API endpoints, only 6 npm dependencies. Data stored in JSON files under <code style="background:var(--well);padding:1px 4px;border-radius:3px;">data/</code> &mdash; works without any database. Optional PostgreSQL for production.</p>' +
+      '<h3 style="color:var(--text-primary);font-size:var(--font-size-lg);margin:16px 0 8px;">RBAC Roles</h3>' +
+      '<table class="data-table"><thead><tr><th>Role</th><th>Level</th><th>Permissions</th></tr></thead><tbody>' +
+        '<tr><td style="color:var(--text-primary);">Admin</td><td>3</td><td>Full access: user management, settings, delete operations, all views</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Analyst</td><td>2</td><td>Run scans, triage alerts, create agents, execute hunts, manage incidents</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Viewer</td><td>1</td><td>Read-only: view dashboards, findings, reports, history</td></tr>' +
+      '</tbody></table>',
+
+
+    /* ===== OVERVIEW VIEWS ===== */
+    'overview':
+      '<h2 style="color:var(--text-primary);font-size:var(--font-size-xl);margin-bottom:16px;">Overview Views</h2>' +
+
+      /* Dashboard */
+      '<h3 style="color:var(--cyan);margin:20px 0 8px;font-size:var(--font-size-lg);">Dashboard</h3>' +
+      '<p>The central security operations console. Everything you need to understand your security posture at a glance.</p>' +
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/Dashboard.png" alt="Vigil Dashboard" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">What you see:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Security Posture Score (0-100)</strong> &mdash; Animated circle with letter grade (A+ to F). Calculated from open vulnerabilities weighted by severity, compliance status, asset coverage, and scan recency. Color: cyan (&ge;80), purple (&ge;50), orange (&lt;50). Updates every 60 seconds via Socket.IO.</li>' +
+        '<li><strong>Stat Cards</strong> &mdash; Active threats count, open findings count, last scan timestamp, compliance percentage. Each animates from 0 to current value on load.</li>' +
+        '<li><strong>Threat Activity Chart</strong> &mdash; 24-hour line chart showing threat count per hour. Powered by Chart.js.</li>' +
+        '<li><strong>Findings by Severity</strong> &mdash; Doughnut chart breaking down all findings into critical (orange), high, medium, and low.</li>' +
+        '<li><strong>Recent Findings Table</strong> &mdash; Last 10 findings with severity badge, title, target hostname/IP, and relative time.</li>' +
+        '<li><strong>AI Security Summary</strong> &mdash; AI-generated briefing with three sections: <span style="color:var(--cyan);">Highlights</span> (what\'s working), <span style="color:var(--orange);">Risks</span> (what needs attention), and Recommendations (next actions). Generated by calling <code style="background:var(--well);padding:1px 4px;border-radius:3px;">GET /api/briefing</code>.</li>' +
+      '</ul>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Buttons:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Refresh</strong> &mdash; Reload all metrics, charts, and AI summary</li>' +
+        '<li><strong>Run Scan</strong> &mdash; Jump to Vulnerability Scanner view</li>' +
+        '<li><strong>Hunt Threat</strong> &mdash; Jump to Threat Hunt view</li>' +
+        '<li><strong>Generate Report</strong> &mdash; Jump to Reports view</li>' +
+      '</ul>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">FAQ:</p>' +
+      '<p><strong>Q: Why is my score low?</strong><br>A: Run scans to establish a baseline. The score improves as you remediate vulnerabilities and pass compliance checks. A fresh install with no scan data shows a low score by design.</p>' +
+      '<p><strong>Q: How often does the AI summary refresh?</strong><br>A: It regenerates each time you navigate to Dashboard or click Refresh. Takes 10-30 seconds depending on your AI provider speed.</p>' +
+      '<p><strong>Q: Why do I see "AI summary unavailable"?</strong><br>A: Your AI CLI isn\'t configured. Go to Settings &gt; AI Provider and select Claude CLI, Claude Code, or Codex CLI. The dashboard works without AI &mdash; only the summary section is affected.</p>' +
+
+      /* Attack Timeline */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Attack Timeline</h3>' +
+      '<p>Chronological view of every security event across all data sources. Think of it as your security event stream &mdash; everything that happened, when it happened, correlated in one timeline.</p>' +
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/AttackTimeline.png" alt="Vigil Attack Timeline" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">What you see:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Stats Bar</strong> &mdash; Total events, critical count (orange), high count, event types count. All animated counters.</li>' +
+        '<li><strong>Time Range Buttons</strong> &mdash; 1h, 24h (default), 7d, 30d. Changes scope of all events shown.</li>' +
+        '<li><strong>AI Analysis Button</strong> &mdash; Sends all visible events to AI for pattern analysis, attack progression detection, and risk assessment. Opens modal with detailed narrative.</li>' +
+        '<li><strong>Event Type Filters</strong> &mdash; All, Findings, Threats, Alerts, Scans, Incidents, Hunts, Auth, OSINT. Click to filter. Shows count badges per type.</li>' +
+        '<li><strong>Type Count Tags</strong> &mdash; finding:137, scan:32, osint:8, threat:5, etc. Color-coded: orange for threats/findings/alerts/incidents, cyan for scans/osint, purple for hunts, gray for auth.</li>' +
+        '<li><strong>Timeline Entries</strong> &mdash; Vertical timeline grouped by date. Each entry shows type badge, severity badge (CRITICAL/HIGH), event title, description, technical details (monospace), and source attribution.</li>' +
+      '</ul>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">FAQ:</p>' +
+      '<p><strong>Q: Where does timeline data come from?</strong><br>A: It aggregates from 9 data sources: findings, scans, threats, alerts, incidents, hunts, OSINT lookups, audit log (auth events), and agent runs. Every action across the platform feeds into this timeline.</p>' +
+      '<p><strong>Q: What does AI Analysis do?</strong><br>A: It reads all events in the current view and generates a narrative identifying attack patterns, correlating events, and assessing risk progression. Useful for incident response &mdash; "what happened in the last 24 hours?"</p>' +
+      '<p><strong>Q: Can I export the timeline?</strong><br>A: Not directly from the UI yet, but the raw data is available via <code style="background:var(--well);padding:1px 4px;border-radius:3px;">GET /api/timeline?range=24h</code>.</p>',
+
+
+    /* ===== INTELLIGENCE & HUNTING ===== */
+    'intelligence':
+      '<h2 style="color:var(--text-primary);font-size:var(--font-size-xl);margin-bottom:16px;">Intelligence &amp; Hunting</h2>' +
+
+      /* Threat Feed */
+      '<h3 style="color:var(--cyan);margin:20px 0 8px;font-size:var(--font-size-lg);">Threat Feed</h3>' +
+      '<p>Real-time threat intelligence feed. Aggregates threats from scan results, local system detection (SSH brute force, suspicious processes, rogue cron jobs, world-writable files), and external feeds (CISA KEV catalog).</p>' +
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/threatfeed.png" alt="Vigil Threat Feed" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">What you see:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Threat Level Badge</strong> &mdash; Large animated text: CRITICAL (orange), HIGH, MEDIUM, LOW (cyan). Calculated from the highest severity active threat.</li>' +
+        '<li><strong>Summary Line</strong> &mdash; "X threats from Y sources" with source breakdown.</li>' +
+        '<li><strong>Threat Sources Chart</strong> &mdash; Bar chart showing threat count by source type (native-container, native-vuln, auth.log, process_scan, cron_scan, file_scan).</li>' +
+        '<li><strong>Threats Table</strong> &mdash; Columns: Severity (badge), Threat title, Source, Time (relative), Action (Triage button).</li>' +
+      '</ul>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">AI Triage:</p>' +
+      '<p>Click <strong>Triage</strong> on any threat. AI analyzes it as a senior SOC analyst and returns:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Verdict</strong> &mdash; true_positive (orange), false_positive (cyan), or needs_investigation (purple)</li>' +
+        '<li><strong>Confidence %</strong> &mdash; 0-100 scale. Below 70% = manual review recommended.</li>' +
+        '<li><strong>Reasoning</strong> &mdash; 2-3 sentence explanation of the verdict.</li>' +
+        '<li><strong>MITRE ATT&CK Technique</strong> &mdash; e.g., T1110.001 (Brute Force: Password Guessing)</li>' +
+        '<li><strong>Recommended Action</strong> &mdash; Specific remediation step.</li>' +
+      '</ul>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">FAQ:</p>' +
+      '<p><strong>Q: How does local threat detection work?</strong><br>A: On Linux, Vigil reads auth.log for failed SSH attempts (&gt;10 in 24h = threat), scans running processes for known miners (xmrig, cpuminer), checks cron jobs for suspicious curl/wget commands, and finds world-writable files in /etc and /usr/local/bin. On Windows, it relies on scan results and manual entries.</p>' +
+      '<p><strong>Q: How often does the feed refresh?</strong><br>A: Every 30 seconds via Socket.IO auto-refresh when the view is active.</p>' +
+
+      /* Alert Triage */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Alert Triage</h3>' +
+      '<p>AI-powered alert classification. Instead of manually reviewing every alert, let AI sort the signal from the noise &mdash; identifying true positives, dismissing false positives, and flagging what needs human investigation.</p>' +
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/AlertTriage.png" alt="Vigil Alert Triage" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">What you see:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Pending Alerts Panel (left)</strong> &mdash; Cards showing severity badge, timestamp, title, description, source. Click any card to trigger AI triage.</li>' +
+        '<li><strong>Triage Result Panel (right)</strong> &mdash; After AI analysis: large verdict label, confidence % with progress bar, analysis reasoning, recommended action, MITRE ATT&CK techniques (purple tags).</li>' +
+        '<li><strong>Triage History</strong> &mdash; Table of past 20 verdicts: Alert name, Verdict (color-coded), Confidence %, Time.</li>' +
+      '</ul>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Verdicts explained:</p>' +
+      '<table class="data-table"><thead><tr><th>Verdict</th><th>Color</th><th>Meaning</th></tr></thead><tbody>' +
+        '<tr><td style="color:var(--orange);font-weight:600;">TRUE POSITIVE</td><td>Orange</td><td>Real threat. Requires immediate action.</td></tr>' +
+        '<tr><td style="color:var(--cyan);font-weight:600;">FALSE POSITIVE</td><td>Cyan</td><td>Not a real threat. Safe to dismiss.</td></tr>' +
+        '<tr><td style="color:#a78bfa;font-weight:600;">NEEDS INVESTIGATION</td><td>Purple</td><td>Ambiguous. AI can\'t determine &mdash; human review needed.</td></tr>' +
+      '</tbody></table>' +
+
+      '<p><strong>Q: What confidence score should I trust?</strong><br>A: 85%+ is high confidence. 70-85% is moderate &mdash; review the reasoning. Below 70%, always manually verify.</p>' +
+
+      /* Threat Hunt */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Threat Hunt</h3>' +
+      '<p>Hypothesis-driven threat hunting powered by AI. You describe what you\'re looking for in plain English, and AI investigates across all your security data &mdash; gathering evidence, running analysis, and delivering a verdict.</p>' +
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/ThreatHunt.png" alt="Vigil Threat Hunt" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">How to use it:</p>' +
+      '<ol style="padding-left:20px;list-style:decimal;">' +
+        '<li style="margin-bottom:6px;">Type a hypothesis in the textarea: <em>"Check for unauthorized SSH access"</em>, <em>"Look for lateral movement indicators"</em>, <em>"Are there any data exfiltration attempts?"</em></li>' +
+        '<li style="margin-bottom:6px;">Or click a <strong>Quick Hypothesis</strong> button: SSH Brute Force, C2 Communication, Privilege Escalation, Lateral Movement, DNS Exfiltration, Persistence Mechanisms.</li>' +
+        '<li style="margin-bottom:6px;">Click <strong>Investigate</strong>. AI takes 15-30 seconds to research.</li>' +
+        '<li style="margin-bottom:6px;">Review the results: Investigation Plan, Evidence Gathered (commands executed + output), AI Analysis, and final Verdict.</li>' +
+      '</ol>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Results include:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Verdict Banner</strong> &mdash; Confirmed threat (orange), Clear (cyan), or Inconclusive (gray).</li>' +
+        '<li><strong>Investigation Plan</strong> &mdash; AI\'s approach to investigating your hypothesis.</li>' +
+        '<li><strong>Evidence</strong> &mdash; Each command executed with status (collected/skipped/failed) and raw output in code blocks.</li>' +
+        '<li><strong>AI Analysis</strong> &mdash; Detailed prose explaining findings, patterns, and recommendations.</li>' +
+      '</ul>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">FAQ:</p>' +
+      '<p><strong>Q: What hypotheses work best?</strong><br>A: Be specific. <em>"Unauthorized SSH access in the last 24 hours"</em> works better than <em>"find threats"</em>. The AI searches audit logs, scan results, threat intel, findings, incidents, and OSINT data to build its analysis.</p>' +
+      '<p><strong>Q: How is this different from Log Analysis?</strong><br>A: Threat Hunt is investigation-focused &mdash; it forms a plan, gathers evidence across multiple sources, and renders a verdict. Log Analysis is a single query-response for specific log searches.</p>' +
+      '<p><strong>Q: Is the investigation history preserved?</strong><br>A: Yes. Last 20 investigations are shown in the History table at the bottom. Click any to review past results.</p>',
+
+
+    /* ===== SCANNING & FINDINGS ===== */
+    'scanning':
+      '<h2 style="color:var(--text-primary);font-size:var(--font-size-xl);margin-bottom:16px;">Scanning &amp; Findings</h2>' +
+
+      /* Findings */
+      '<h3 style="color:var(--cyan);margin:20px 0 8px;font-size:var(--font-size-lg);">Vulnerability Findings</h3>' +
+      '<p>Unified vulnerability management. Every finding from every scan type (nmap, nuclei, trivy, SSL) aggregated into one searchable, filterable, actionable table.</p>' +
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/Findings.png" alt="Vigil Vulnerability Findings" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">What you see:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Stats Cards</strong> &mdash; Total findings, Critical count (orange), High count (orange), Open count (purple). Animated counters.</li>' +
+        '<li><strong>Filter Bar</strong> &mdash; Four dropdowns + search: Severity (all/critical/high/medium/low), Status (all/open/resolved/false_positive), Scan Type (all/nuclei/nmap/trivy/ssl), Search text (matches title + target).</li>' +
+        '<li><strong>Findings Table</strong> &mdash; Checkbox, Severity badge, Title, Target (hostname/IP), Status tag, Scan Date. Click any row for detail panel.</li>' +
+        '<li><strong>Detail Panel</strong> &mdash; Slides in showing: full title, severity, target, status, scan type, description, remediation guidance, CVE ID (if applicable), AI Analysis button.</li>' +
+      '</ul>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Bulk Actions:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Mark Resolved</strong> &mdash; Select findings with checkboxes, click to mark as resolved.</li>' +
+        '<li><strong>Mark False Positive</strong> &mdash; Dismiss false positives in bulk. Status tracked with who/when.</li>' +
+      '</ul>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">AI Analysis (per finding):</p>' +
+      '<p>Click <strong>AI Analysis</strong> in the detail panel. AI generates: Root Cause explanation, Impact assessment, step-by-step Remediation Steps, and Risk if Unpatched. Takes ~25 seconds.</p>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">FAQ:</p>' +
+      '<p><strong>Q: What scan types generate findings?</strong><br>A: nmap (open ports, exposed services), nuclei (CVEs, misconfigurations, exposed panels), trivy (container vulnerabilities, secrets, misconfigurations), SSL (certificate issues, weak ciphers).</p>' +
+      '<p><strong>Q: How do I reduce the finding count?</strong><br>A: Fix the underlying issues, then re-scan. Mark false positives to remove noise. Use bulk actions to manage large finding sets efficiently.</p>' +
+
+      /* Port Scanner */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Port Scanner (Nmap)</h3>' +
+      '<p>Network port scanning powered by nmap. Discover open ports, running services, and service versions on any target.</p>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Scan Profiles:</p>' +
+      '<table class="data-table"><thead><tr><th>Profile</th><th>Flags</th><th>Speed</th><th>Use Case</th></tr></thead><tbody>' +
+        '<tr><td style="color:var(--text-primary);">Quick</td><td><code>-F -T4</code></td><td>~15s</td><td>Top 100 ports, fast check</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Standard</td><td><code>-sV -T3</code></td><td>~2min</td><td>Top 1000 ports + service detection</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Full</td><td><code>-sV -sC -O -p-</code></td><td>~15min</td><td>All 65535 ports, OS detection, scripts</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Stealth</td><td><code>-sS -T2</code></td><td>~5min</td><td>SYN scan, less detectable</td></tr>' +
+      '</tbody></table>' +
+      '<p><strong>Q: Can I scan internal networks?</strong><br>A: Yes. Scans run from the Vigil server. Ensure it has network access to the target. Custom port ranges and flags are supported in advanced options.</p>' +
+      '<p><strong>Q: Does nmap need root?</strong><br>A: SYN scans do. Either run Vigil as root (not recommended) or set capabilities: <code style="background:var(--well);padding:1px 4px;border-radius:3px;">sudo setcap cap_net_raw+ep /usr/bin/nmap</code></p>' +
+
+      /* Vuln Scanner */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Vulnerability Scanner (Nuclei)</h3>' +
+      '<p>Template-based vulnerability scanning with 9000+ community templates. Finds CVEs, misconfigurations, exposed panels, default credentials, and more.</p>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Features:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li>Severity filtering: critical, high, medium, low, info</li>' +
+        '<li>Template categories: CVEs, vulnerabilities, misconfigurations, exposed-panels</li>' +
+        '<li>Real-time results as findings are discovered</li>' +
+        '<li>Each finding links to remediation references</li>' +
+      '</ul>' +
+      '<p><strong>Q: How do I update templates?</strong><br>A: Run <code style="background:var(--well);padding:1px 4px;border-radius:3px;">nuclei -update-templates</code> on the server. Templates are stored in <code>~/.nuclei-templates/</code>.</p>' +
+
+      /* SSL Audit */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">SSL Audit (OpenSSL)</h3>' +
+      '<p>Certificate chain analysis, cipher suite grading, protocol version testing (TLS 1.0-1.3), and expiry monitoring. Grades from A+ (perfect) to F.</p>' +
+      '<p><strong>Q: What grades exist?</strong><br>A: A+ (HSTS + strong ciphers + TLS 1.2+), A, B (TLS 1.1), C (weak ciphers), D (TLS 1.0), F (expired/self-signed). Grade is based on protocol support, cipher strength, certificate validity, and HSTS.</p>' +
+
+      /* DNS Recon */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">DNS Recon</h3>' +
+      '<p>DNS enumeration: A, AAAA, MX, NS, TXT, SOA, CNAME records. WHOIS lookup and zone transfer testing.</p>' +
+      '<p><strong>Q: What is a zone transfer test?</strong><br>A: Tests if the DNS server allows AXFR queries, which would expose all DNS records. A successful zone transfer is a misconfiguration finding that attackers exploit for reconnaissance.</p>',
+
+
+    /* ===== AGENTS & CAMPAIGNS ===== */
+    'agents':
+      '<h2 style="color:var(--text-primary);font-size:var(--font-size-xl);margin-bottom:16px;">Security Agents &amp; Campaigns</h2>' +
+
+      /* Security Agents */
+      '<h3 style="color:var(--cyan);margin:20px 0 8px;font-size:var(--font-size-lg);">Security Agents</h3>' +
+      '<p>20 built-in AI security agents, each a specialist with a focused system prompt. Create unlimited custom agents. Run them against any target with natural language input.</p>' +
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/SecurityAgents.png" alt="Vigil Security Agents" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">What you see:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Stats Bar</strong> &mdash; Total Agents (20), Scanners (6), Analyzers (6), Total Runs (cumulative). Animated counters.</li>' +
+        '<li><strong>Category Tabs</strong> &mdash; All, Scanners, Analyzers, Defenders, Hunters, Custom. Filter the grid.</li>' +
+        '<li><strong>Agent Cards Grid</strong> &mdash; 3-column layout. Each card shows: category icon, agent name, category tag (colored), risk level (low/medium/high), run count, description, orange "Run Agent" button.</li>' +
+      '</ul>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Built-in Agents (20):</p>' +
+      '<table class="data-table" style="font-size:var(--font-size-xs);"><thead><tr><th>Agent</th><th>Category</th><th>Risk</th><th>What It Does</th></tr></thead><tbody>' +
+        '<tr><td>Port Scanner</td><td>Scanner</td><td>Low</td><td>Analyzes open ports, services, and network attack surface</td></tr>' +
+        '<tr><td>Subdomain Enumerator</td><td>Scanner</td><td>Low</td><td>Discovers subdomains and maps external attack surface</td></tr>' +
+        '<tr><td>HTTP Header Auditor</td><td>Scanner</td><td>Low</td><td>Grades HTTP security headers, identifies missing protections</td></tr>' +
+        '<tr><td>XSS Scanner</td><td>Scanner</td><td>Medium</td><td>Identifies cross-site scripting vulnerabilities and injection points</td></tr>' +
+        '<tr><td>SQL Injection Detector</td><td>Scanner</td><td>Medium</td><td>Detects SQL injection vulnerabilities and database exposure</td></tr>' +
+        '<tr><td>TLS Configuration Analyzer</td><td>Scanner</td><td>Low</td><td>Grades TLS/SSL configuration, cipher suites, and certificate security</td></tr>' +
+        '<tr><td>AWS Security Auditor</td><td>Analyzer</td><td>Low</td><td>Audits AWS configurations against CIS benchmarks</td></tr>' +
+        '<tr><td>IAM Policy Analyzer</td><td>Analyzer</td><td>Low</td><td>Identifies over-privileged access, unused permissions, and IAM risks</td></tr>' +
+        '<tr><td>PCI DSS Checker</td><td>Analyzer</td><td>Low</td><td>Evaluates PCI DSS v4.0 payment security requirements</td></tr>' +
+      '</tbody></table>' +
+      '<p style="color:var(--text-tertiary);font-size:var(--font-size-xs);margin-top:4px;">Plus 11 more: Log Analyzer, Malware Analyst, Network Forensics, Firewall Auditor, Incident Responder, Threat Hunter, APT Detector, and custom agents you create.</p>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Running an Agent:</p>' +
+      '<ol style="padding-left:20px;list-style:decimal;">' +
+        '<li style="margin-bottom:4px;">Click an agent card or its "Run Agent" button.</li>' +
+        '<li style="margin-bottom:4px;">Enter target/input in the textarea (e.g., "192.168.1.0/24" for Port Scanner, or "Check our AWS S3 bucket policies" for AWS Auditor).</li>' +
+        '<li style="margin-bottom:4px;">Click Run. AI executes with a 60-second timeout.</li>' +
+        '<li style="margin-bottom:4px;">View output with color-coded border: cyan = success, orange = error.</li>' +
+        '<li style="margin-bottom:4px;">View run history (last 50 runs per agent) with time, status, duration, input.</li>' +
+      '</ol>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Creating Custom Agents:</p>' +
+      '<p>Click <strong>Create Agent</strong>. Fill in: Name, Category (dropdown), Description, System Prompt (defines agent personality/expertise), Task Prompt (with <code style="background:var(--well);padding:1px 4px;border-radius:3px;">{{input}}</code> template variable). If you leave prompts blank, they\'re auto-generated from the name and category.</p>' +
+
+      /* Campaigns */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Multi-Agent Campaigns</h3>' +
+      '<p>Orchestrate multiple agents toward a single security goal. Define what you want done, set max agents, and Vigil coordinates the work.</p>' +
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/Campaigns.png" alt="Vigil Multi-Agent Campaigns" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">How it works:</p>' +
+      '<ol style="padding-left:20px;list-style:decimal;">' +
+        '<li style="margin-bottom:4px;">Click <strong>Launch Campaign</strong>.</li>' +
+        '<li style="margin-bottom:4px;">Enter a goal: <em>"Full security assessment of production infrastructure"</em>, <em>"Audit all external-facing services for misconfigurations"</em>.</li>' +
+        '<li style="margin-bottom:4px;">Set max agents (1-10, default 3) using the slider.</li>' +
+        '<li style="margin-bottom:4px;">Campaign runs agents in sequence. Track progress in Active Campaigns panel with progress bar and agent completion count.</li>' +
+        '<li style="margin-bottom:4px;">Click <strong>View Details</strong> to see each agent\'s status and summary in a modal.</li>' +
+      '</ol>' +
+      '<p><strong>Q: How does Vigil choose which agents to run?</strong><br>A: AI selects the most relevant agents based on your goal description and available agent capabilities. A "security assessment" might use Port Scanner + HTTP Header Auditor + TLS Analyzer.</p>',
+
+
+    /* ===== INCIDENTS & PLAYBOOKS ===== */
+    'incidents':
+      '<h2 style="color:var(--text-primary);font-size:var(--font-size-xl);margin-bottom:16px;">Incidents &amp; Playbooks</h2>' +
+
+      /* Playbooks */
+      '<h3 style="color:var(--cyan);margin:20px 0 8px;font-size:var(--font-size-lg);">Incident Response Playbooks</h3>' +
+      '<p>Pre-built and AI-generated incident response checklists. When an incident hits, you need a structured plan &mdash; not ad-hoc guessing.</p>' +
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/playbook.png" alt="Vigil Incident Response Playbooks" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Built-in Playbook Templates:</p>' +
+      '<table class="data-table"><thead><tr><th>Playbook</th><th>Severity</th><th>Steps</th></tr></thead><tbody>' +
+        '<tr><td style="color:var(--text-primary);">Ransomware Response</td><td><span style="color:var(--orange);">Critical</span></td><td>Isolate, contain, assess damage, eradicate, restore, post-mortem</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Phishing Incident</td><td><span style="color:var(--orange);">High</span></td><td>Identify scope, quarantine emails, reset credentials, scan endpoints</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Data Breach Response</td><td><span style="color:var(--orange);">Critical</span></td><td>Contain leak, forensics, notification, legal, remediation</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Account Compromise</td><td><span style="color:var(--orange);">High</span></td><td>Lock account, audit sessions, reset creds, check lateral movement</td></tr>' +
+      '</tbody></table>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Create from Natural Language:</p>' +
+      '<p>Click <strong>Create Playbook from Natural Language</strong>. Describe your incident scenario in the modal textarea, e.g.: <em>"Our web application is under a SQL injection attack and customer data may be exposed"</em>. Click <strong>Generate Playbook</strong>. AI creates a full step-by-step response plan with triage, containment, eradication, recovery, and post-incident phases.</p>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Using a Playbook:</p>' +
+      '<p>Click any playbook template card to open it. Each step has a checkbox (toggle completion) and an <strong>Execute</strong> button for automated steps. Work through the checklist during an active incident.</p>' +
+
+      '<p><strong>Q: Can I customize built-in playbooks?</strong><br>A: Built-in templates are read-only but you can create unlimited custom playbooks via natural language generation. Each generated playbook is editable.</p>' +
+
+      /* Incidents */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Incidents</h3>' +
+      '<p>Full incident lifecycle management. Create, investigate, contain, eradicate, recover, close. Each incident has a timeline of events and can generate an AI playbook.</p>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Incident Status Flow:</p>' +
+      '<div class="code-block" style="margin-bottom:12px;">Open → Investigating → Contained → Eradicated → Recovered → Closed</div>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">AI Response:</p>' +
+      '<p>Click <strong>Generate Playbook</strong> on any open incident. AI reads the incident context + timeline and generates a structured IR guide with: Immediate Actions, Containment steps, Investigation approach, Eradication procedures, Recovery plan, and Lessons Learned. Takes ~30 seconds.</p>' +
+      '<p><strong>Q: What severities exist?</strong><br>A: Critical (P1), High (P2), Medium (P3), Low (P4). Each has default SLA response times.</p>',
+
+
+    /* ===== COMPLIANCE & REPORTS ===== */
+    'compliance':
+      '<h2 style="color:var(--text-primary);font-size:var(--font-size-xl);margin-bottom:16px;">Compliance &amp; Reports</h2>' +
+
+      /* Compliance */
+      '<h3 style="color:var(--cyan);margin:20px 0 8px;font-size:var(--font-size-lg);">Compliance Frameworks</h3>' +
+      '<p>Track compliance against industry frameworks. Each control is automatically assessed with pass/fail/partial status. Collect evidence and generate compliance reports.</p>' +
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/complainace_framework.png" alt="Vigil Compliance Frameworks" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Supported Frameworks:</p>' +
+      '<table class="data-table"><thead><tr><th>Framework</th><th>Controls</th><th>Focus</th></tr></thead><tbody>' +
+        '<tr><td style="color:var(--text-primary);">SOC 2 Type II</td><td>CC1-CC9, A1, PI1, C1, P1</td><td>Security, availability, processing integrity, confidentiality, privacy</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">ISO 27001</td><td>A.5-A.18</td><td>Information security management system (ISMS)</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">NIST 800-53</td><td>AC, AU, CM, IA, IR, SC</td><td>Federal information systems security controls</td></tr>' +
+      '</tbody></table>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">What you see:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Framework Tabs</strong> &mdash; SOC 2, ISO 27001, NIST 800-53. Click to switch.</li>' +
+        '<li><strong>Stats Cards</strong> &mdash; Overall Compliance %, Passed controls, Failed controls, Partial controls.</li>' +
+        '<li><strong>Controls Table</strong> &mdash; ID (e.g., CC1.1), Control name (e.g., "Control Environment"), Status badge (Passed=cyan, Failed=orange, Partial=purple), Evidence button.</li>' +
+      '</ul>' +
+
+      '<p><strong>Q: What does "Partial" mean?</strong><br>A: The control is partially implemented. Some checks pass but others fail. Click Evidence to see what\'s missing.</p>' +
+      '<p><strong>Q: How does Generate Report work?</strong><br>A: Click the button to produce a compliance readiness report covering all controls, current status, gaps, and remediation priorities.</p>' +
+
+      /* Reports */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Reports</h3>' +
+      '<p>AI-generated security reports covering your entire security posture. Five report types with structured output.</p>' +
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/reports.png" alt="Vigil Security Reports" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Report Types:</p>' +
+      '<table class="data-table"><thead><tr><th>Type</th><th>Content</th></tr></thead><tbody>' +
+        '<tr><td style="color:var(--text-primary);">Security Audit</td><td>Full security assessment: posture score, findings, threats, compliance status, recommendations</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Vulnerability Report</td><td>All findings by severity, remediation priority, SLA tracking</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Compliance Report</td><td>Framework status, control pass/fail, evidence gaps, readiness %</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Incident Report</td><td>Incident history, timeline, response metrics, lessons learned</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Executive Summary</td><td>High-level briefing: key metrics, top risks, recommended actions</td></tr>' +
+      '</tbody></table>' +
+      '<p>Reports include an Executive Summary with a metrics table (posture score, total findings, open findings, active threats, open incidents), Current State assessment, Strengths, Risks, and Recommendations. The report shown in the screenshot is a Compliance Readiness Report with markdown formatting.</p>' +
+      '<p><strong>Q: Can I export reports?</strong><br>A: Reports are generated as structured text/markdown. Copy from the modal or use the API: <code style="background:var(--well);padding:1px 4px;border-radius:3px;">POST /api/reports/generate {type}</code>.</p>',
+
+
+    /* ===== TERMINAL, OSINT & MCP ===== */
+    'tools':
+      '<h2 style="color:var(--text-primary);font-size:var(--font-size-xl);margin-bottom:16px;">Terminal, OSINT &amp; MCP</h2>' +
+
+      /* AI Terminal */
+      '<h3 style="color:var(--cyan);margin:20px 0 8px;font-size:var(--font-size-lg);">AI Terminal</h3>' +
+      '<p>Three-in-one command center: a real shell, an AI security assistant, and a credential vault browser &mdash; all in a floating drawer you can open from any page.</p>' +
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/AI_terminal.png" alt="Vigil AI Terminal — Shell tab" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Three Tabs:</p>' +
+      '<table class="data-table"><thead><tr><th>Tab</th><th>What It Does</th></tr></thead><tbody>' +
+        '<tr><td style="color:var(--text-primary);">Shell</td><td>Full interactive terminal (xterm.js + node-pty). Run any command: nmap, nuclei, docker, git, etc. Quick command buttons: clear, ls, ports, docker, auth log. Shows "Connected" status.</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Vigil AI</td><td>Natural language security assistant. Type questions like "Run a security posture check" or "Scan ports on localhost". Quick suggestion buttons: security posture check, scan ports, check SSL certificate, analyze auth log, list vulnerabilities, generate incident report. AI executes tools and returns results.</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Vault</td><td>Browse credentials stored in the encrypted vault (AES-256-GCM). Quick access without navigating to the Credentials view.</td></tr>' +
+      '</tbody></table>' +
+
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/vigial_ai.png" alt="Vigil AI Terminal — Vigil AI tab" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Controls:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Open Terminal (Ctrl+`)</strong> &mdash; Toggle the floating drawer from any page.</li>' +
+        '<li><strong>Connect</strong> &mdash; Reconnect the terminal session if disconnected.</li>' +
+        '<li><strong>Fullscreen</strong> &mdash; Expand terminal to full viewport.</li>' +
+        '<li><strong>Minimize</strong> &mdash; Collapse to bottom bar.</li>' +
+      '</ul>' +
+
+      '<p><strong>Q: Does the terminal persist across page navigation?</strong><br>A: Yes. The terminal is a floating drawer that stays open when you switch views. Your shell session is maintained via Socket.IO.</p>' +
+
+      /* OSINT */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">OSINT Reconnaissance</h3>' +
+      '<p>Domain and IP intelligence gathering. Enter any domain or IP and get comprehensive reconnaissance: WHOIS, DNS records, SSL certificates, HTTP security headers, technology detection, and AI security assessment.</p>' +
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/OSINT.png" alt="Vigil OSINT Reconnaissance" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Domain Intel Tab:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>AI Security Assessment</strong> &mdash; Top-level narrative analyzing the domain\'s security posture, risks, and recommendations. 6-8 sentences.</li>' +
+        '<li><strong>Stats Cards</strong> &mdash; Subdomains found, Certificates discovered, Technologies detected, Missing security headers.</li>' +
+        '<li><strong>WHOIS Data</strong> &mdash; Registrar, creation/expiry dates, registrant, nameservers, status codes.</li>' +
+        '<li><strong>SSL Certificate</strong> &mdash; CN, Issuer, Valid From/To, Protocol (TLS 1.3), SAN count.</li>' +
+        '<li><strong>Technologies Detected</strong> &mdash; Tags showing discovered tech (CloudFlare, OpenSSL, etc.).</li>' +
+        '<li><strong>HTTP Security Headers</strong> &mdash; Table checking 7 headers (HSTS, CSP, X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy) with Present (cyan) / Missing (orange) status and values.</li>' +
+        '<li><strong>Subdomains</strong> &mdash; Discovered subdomains as tags.</li>' +
+        '<li><strong>Certificates</strong> &mdash; CT log results table: CN, Issuer, Valid Until (top 25).</li>' +
+        '<li><strong>DNS Records</strong> &mdash; MX, A, AAAA, TXT records grouped by type.</li>' +
+      '</ul>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">IP Lookup Tab:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Geolocation</strong> &mdash; Country, region, city, timezone, coordinates.</li>' +
+        '<li><strong>Network Info</strong> &mdash; ISP, Organization, ASN, AS Name, Reverse DNS.</li>' +
+        '<li><strong>Port Scan</strong> &mdash; Scans 10 common ports (22, 80, 443, 8080, 3389, 3306, 5432, 6379, 27017, 8443) with service identification.</li>' +
+        '<li><strong>AI Security Assessment</strong> &mdash; Risk analysis based on open ports, geolocation, and network data.</li>' +
+      '</ul>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">History Tab:</p>' +
+      '<p>Last 100 lookups (domain + IP) with type, target, summary, and timestamp. Click any entry to re-run the investigation.</p>' +
+
+      '<p><strong>Q: Does OSINT make external API calls?</strong><br>A: Domain recon uses TLS connections (for SSL cert) and HTTP requests (for headers/technologies). IP lookup uses ip-api.com for geolocation. No paid APIs required.</p>' +
+
+      /* Log Analysis */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Log Analysis</h3>' +
+      '<p>Natural language log querying. Type a question in plain English and AI searches Vigil\'s security data stores to generate analysis.</p>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Data Sources Searched:</p>' +
+      '<p>AI queries across 9 internal data stores: audit-log, scans, threats, alerts, findings, incidents, agent-runs, hunts, ssl-domains, osint-history. On Linux, it can also query system logs (syslog, auth.log, journal).</p>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Example Queries:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><em>"Show me failed login attempts in the last hour"</em></li>' +
+        '<li><em>"What scans ran today?"</em></li>' +
+        '<li><em>"List all critical findings"</em></li>' +
+        '<li><em>"Show recent threat triage results"</em></li>' +
+        '<li><em>"What incidents are open?"</em></li>' +
+      '</ul>' +
+
+      '<p><strong>Q: Does it only work on Linux?</strong><br>A: No. Vigil queries its own internal data stores cross-platform (Windows, macOS, Linux). On Linux, it can additionally query system logs (syslog, auth.log, systemd journal).</p>' +
+
+      /* MCP Playground */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">MCP Playground</h3>' +
+      '<p>Interactive testing interface for Vigil\'s built-in MCP (Model Context Protocol) server. Test all 15 tools, browse 3 resources, run 4 AI prompt workflows, and connect external AI assistants.</p>' +
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/MCP_Playground.png" alt="Vigil MCP Playground" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">5 Zones:</p>' +
+      '<ol style="padding-left:20px;list-style:decimal;">' +
+        '<li style="margin-bottom:6px;"><strong>Stats Bar</strong> &mdash; Tools (15), Resources (3), Prompts (4), MCP Calls counter.</li>' +
+        '<li style="margin-bottom:6px;"><strong>AI Security Workflows</strong> &mdash; 4 clickable prompt cards: Security Audit (Multi-Tool), Threat Briefing (Daily), Incident Response (Interactive), Compliance Report (SOC2/ISO/NIST). Click to run the workflow with optional parameters.</li>' +
+        '<li style="margin-bottom:6px;"><strong>Live Security Data</strong> &mdash; 3 MCP resource cards showing real-time data: Security Posture (score + grade from vigil://posture), Active Threats (count + critical badge + top 3 threats from vigil://threats), Open Findings (count + severity breakdown from vigil://findings).</li>' +
+        '<li style="margin-bottom:6px;"><strong>Tool Explorer</strong> &mdash; Two-panel layout. Left: search bar + category tabs (Scanning/Intelligence/Compliance/Incident/System) + tool list. Right: selected tool with description, auto-generated parameter form, Execute button, smart result rendering.</li>' +
+        '<li style="margin-bottom:6px;"><strong>Request Log</strong> &mdash; Last 20 MCP calls with timestamp, status dot (cyan=success, orange=error), method, params, duration in ms.</li>' +
+      '</ol>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">15 MCP Tools:</p>' +
+      '<div class="code-block" style="margin-bottom:8px;font-size:11px;">check_posture     &mdash; Security posture score + breakdown\nscan_ports        &mdash; Nmap port scan (target, ports)\nscan_vulnerabilities &mdash; Nuclei scan (target, severity)\ncheck_ssl         &mdash; SSL certificate check (domain)\nquery_logs        &mdash; Natural language log search\nosint_domain      &mdash; Domain DNS recon\nosint_ip          &mdash; IP geolocation + port scan\ntriage_alert      &mdash; AI alert triage (title, details, severity)\nhunt_threat       &mdash; Threat hypothesis investigation\nrun_agent         &mdash; Execute security agent (slug, input)\nlaunch_campaign   &mdash; Multi-agent campaign (goal, maxAgents)\ngenerate_report   &mdash; Report generation (type)\ncompliance_check  &mdash; Framework compliance check\nlist_findings     &mdash; Get vulnerability findings\nincident_create   &mdash; Create security incident</div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Connecting External AI:</p>' +
+      '<p>Click <strong>Connect to Claude</strong> for setup instructions:</p>' +
+      '<div class="code-block" style="margin-bottom:8px;"># Claude Code\nclaude mcp add vigil --transport http http://localhost:4100/mcp\n\n# Claude Desktop config:\n{ "mcpServers": { "vigil": { "url": "http://localhost:4100/mcp" } } }\n\n# cURL test:\ncurl -X POST http://localhost:4100/mcp -H "Content-Type: application/json" \\\n  -d \'{"jsonrpc":"2.0","method":"tools/list","id":1}\'</div>' +
+      '<p><strong>Q: What is MCP?</strong><br>A: Model Context Protocol is a standard for AI assistants to interact with external tools. Vigil exposes its entire security platform as MCP tools, so Claude (or any MCP-compatible AI) can run scans, check posture, triage alerts, hunt threats, and generate reports on your behalf.</p>',
+
+
+    /* ===== SETTINGS & SYSTEM ===== */
+    'system':
+      '<h2 style="color:var(--text-primary);font-size:var(--font-size-xl);margin-bottom:16px;">Settings &amp; System</h2>' +
+
+      /* Settings */
+      '<h3 style="color:var(--cyan);margin:20px 0 8px;font-size:var(--font-size-lg);">Settings</h3>' +
+      '<p>Platform configuration with 5 tabs: Account, AI Provider, Scanners, Security, About.</p>' +
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/settings.png" alt="Vigil Settings" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<table class="data-table"><thead><tr><th>Tab</th><th>What You Configure</th></tr></thead><tbody>' +
+        '<tr><td style="color:var(--text-primary);">Account</td><td>Username, password change, Two-Factor Authentication (TOTP 2FA with QR code + backup codes)</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">AI Provider</td><td>Select AI backend: Claude CLI, Claude Code, Codex CLI, or None. Tests connection on save.</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Scanners</td><td>Verify installed scanner paths: nmap, nuclei, trivy, nikto, openssl. Shows version and status.</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Security</td><td>Session timeout, password policy, IP allowlisting, audit log retention.</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">About</td><td>Vigil version, Node.js version, OS, uptime, license (AGPL-3.0).</td></tr>' +
+      '</tbody></table>' +
+
+      '<p><strong>Q: How do I enable 2FA?</strong><br>A: Settings &gt; Account &gt; Two-Factor Authentication &gt; Setup 2FA. Scan the QR code with any TOTP app (Google Authenticator, Authy, 1Password). Enter the 6-digit code to verify. Save backup codes securely.</p>' +
+      '<p><strong>Q: What happens if I choose "None" for AI?</strong><br>A: All views still work. AI-powered features (triage, hunting, playbooks, analysis, summaries) degrade gracefully with "AI not configured" messages. Scanning, findings, compliance, reports, and all data views remain fully functional.</p>' +
+
+      /* Credential Vault */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Credential Vault</h3>' +
+      '<p>Encrypted credential storage using AES-256-GCM. Store API keys, tokens, passwords, and other secrets. Values are encrypted at rest and only decrypted when you click Reveal.</p>' +
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/credentials.png" alt="Vigil Credential Vault" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">What you see:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Credentials Table</strong> &mdash; Name, Type (api_key / token / password / secret), Last Updated, Actions (Reveal / Delete).</li>' +
+        '<li><strong>Add Credential</strong> &mdash; Button opens modal: Name, Type dropdown, Value (password field). Stored encrypted immediately.</li>' +
+        '<li><strong>Reveal</strong> &mdash; Decrypts and shows the value temporarily. Click again to hide.</li>' +
+        '<li><strong>Delete</strong> &mdash; Permanently removes the credential (confirmation required).</li>' +
+      '</ul>' +
+
+      '<p><strong>Q: How secure is the vault?</strong><br>A: AES-256-GCM encryption with a unique IV per credential. The encryption key is in your .env file (ENCRYPTION_KEY). Without this key, credential values are unrecoverable.</p>' +
+
+      /* Audit Log */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Audit Log</h3>' +
+      '<p>Immutable audit trail of every action in the platform. Every login, scan, triage, agent run, setting change, and API call is logged.</p>' +
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/audit_log.png" alt="Vigil Audit Log" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">What you see:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Filter Bar</strong> &mdash; Date range pickers (from/to), search by user or action, Filter button.</li>' +
+        '<li><strong>Log Table</strong> &mdash; Timestamp, User, Action (e.g., alert.triage, scan.start, auth.login), Resource (UUID of affected object), Details.</li>' +
+        '<li><strong>Export</strong> &mdash; Download the filtered log as JSON.</li>' +
+      '</ul>' +
+
+      '<p><strong>Q: Is the audit log tamper-proof?</strong><br>A: Entries are append-only with cryptographic checksums. Each entry references the previous entry\'s hash, forming a chain. Tampering with any entry breaks the chain.</p>' +
+
+      /* Notifications */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Notifications</h3>' +
+      '<p>In-app notification center with real-time alerts via Socket.IO. Configure which events you want to be notified about.</p>' +
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/notifications.png" alt="Vigil Notifications" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">What you see:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Notification Cards</strong> &mdash; Each shows severity tag (info/warning/critical), message, Mark Read and Dismiss buttons.</li>' +
+        '<li><strong>Filter Dropdown</strong> &mdash; All, Unread, Info, Warning, Critical.</li>' +
+        '<li><strong>Mark All Read</strong> &mdash; Bulk clear unread state.</li>' +
+      '</ul>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Notification Preferences:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li>Critical findings (enabled by default)</li>' +
+        '<li>Scan completions (enabled by default)</li>' +
+        '<li>SSL certificate expiry warnings (enabled by default)</li>' +
+        '<li>Daily security digest (optional)</li>' +
+        '<li>Agent run completions (optional)</li>' +
+      '</ul>' +
+
+      /* Knowledge Base */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Knowledge Base</h3>' +
+      '<p>Built-in security knowledge base with searchable articles and custom note-taking. Reference documentation for security concepts, procedures, and tools.</p>' +
+      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/Knowledge_base_with_custom_note_taking.png" alt="Vigil Knowledge Base" style="width:100%;display:block;" loading="lazy"></div>' +
+
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">What you see:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Search Bar</strong> &mdash; Filter articles by keyword.</li>' +
+        '<li><strong>Category Tabs</strong> &mdash; All, Vulnerabilities, Techniques, Tools, Procedures, Notes.</li>' +
+        '<li><strong>Article Cards</strong> &mdash; 2-column grid showing category tag (getting-started, concepts, setup), title, preview text.</li>' +
+        '<li><strong>Add Note</strong> &mdash; Create custom notes with markdown support. Saved to data/ store.</li>' +
+      '</ul>' +
+      '<p>Built-in articles include: Getting Started with Vigil, Understanding Security Scores, Scanner Installation, RBAC Roles, and more. Add your own SOPs, runbooks, and investigation notes.</p>',
+
+
+    /* ===== API REFERENCE ===== */
+    'api':
+      '<h2 style="color:var(--text-primary);font-size:var(--font-size-xl);margin-bottom:16px;">API Reference</h2>' +
+      '<p style="margin-bottom:12px;">All endpoints require authentication via <code style="background:var(--well);padding:1px 4px;border-radius:3px;">vigil_session</code> cookie or <code style="background:var(--well);padding:1px 4px;border-radius:3px;">Authorization: Bearer TOKEN</code> header.</p>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">Authentication</h3>' +
+      '<div class="code-block" style="margin-bottom:8px;">POST /api/auth/login        { username, password }\nPOST /api/auth/logout\nGET  /api/auth/check\nPOST /api/auth/2fa/setup    (returns QR code)\nPOST /api/auth/2fa/verify   { code }</div>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">Dashboard &amp; Posture</h3>' +
+      '<div class="code-block" style="margin-bottom:8px;">GET  /api/posture              Security posture score (0-100)\nGET  /api/dashboard/stats      Threats, findings, scan time, compliance %\nGET  /api/dashboard/threat-activity   24h threat timeline\nGET  /api/dashboard/severity-breakdown  Findings by severity\nGET  /api/briefing             AI security summary\nGET  /api/timeline?range=24h&type=all  Attack timeline events</div>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">Scanning</h3>' +
+      '<div class="code-block" style="margin-bottom:8px;">POST /api/scans             { type: nmap|nuclei|trivy|ssl, target, options }\nGET  /api/scans              List all scans\nGET  /api/scans/:id          Scan details + findings\nPOST /api/scans/:id/rerun    Re-run scan\nDEL  /api/scans/:id          Delete scan (admin)</div>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">Threats &amp; Findings</h3>' +
+      '<div class="code-block" style="margin-bottom:8px;">GET  /api/threats             Active threats + level\nGET  /api/threats/feed        External threat feeds + CISA KEV\nPOST /api/threats/:id/triage  AI threat triage\nGET  /api/findings            All findings (filter: severity, status, type)\nGET  /api/findings/stats      Finding statistics\nPOST /api/findings/:id/analyze  AI vulnerability analysis\nPATCH /api/findings/:id       Update status {status}\nPOST /api/hunt               { hypothesis }  Threat hunting\nGET  /api/hunt/history        Past 20 investigations</div>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">Alerts &amp; Triage</h3>' +
+      '<div class="code-block" style="margin-bottom:8px;">GET  /api/alerts?status=pending  Pending alerts\nPOST /api/alerts/:id/triage     AI alert triage\nGET  /api/alerts/triage-history  Past 20 triage results</div>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">Agents &amp; Campaigns</h3>' +
+      '<div class="code-block" style="margin-bottom:8px;">GET  /api/agents              List all agents\nPOST /api/agents              { name, category, description, system_prompt }\nPOST /api/agents/:id/run     { input }  Execute agent (60s timeout)\nGET  /api/agents/:id/runs     Agent run history\nGET  /api/campaigns           List campaigns\nPOST /api/campaigns           { goal, max_agents }  Launch campaign</div>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">OSINT</h3>' +
+      '<div class="code-block" style="margin-bottom:8px;">POST /api/osint/domain       { domain }  Full domain recon + AI analysis\nPOST /api/osint/ip           { ip }  IP lookup + port scan + AI analysis\nGET  /api/osint/history       Last 100 lookups</div>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">Incidents &amp; Playbooks</h3>' +
+      '<div class="code-block" style="margin-bottom:8px;">GET  /api/incidents           List incidents\nPOST /api/incidents           { title, severity, description, type }\nPATCH /api/incidents/:id      { status, severity, assignee }\nPOST /api/incidents/:id/respond  AI playbook generation (30s)\nPOST /api/incidents/:id/timeline  { event, detail }\nGET  /api/playbooks           Playbook templates\nPOST /api/playbooks/generate  { description }  AI generation</div>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">Compliance &amp; Reports</h3>' +
+      '<div class="code-block" style="margin-bottom:8px;">GET  /api/compliance/:framework  Framework status (soc2|iso27001|nist800-53)\nPOST /api/reports/generate      { type }  AI report generation</div>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">Log Analysis</h3>' +
+      '<div class="code-block" style="margin-bottom:8px;">POST /api/logs/query         { query, source }  NL log search + AI analysis\nGET  /api/logs/sources        Available log sources</div>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">MCP Server</h3>' +
+      '<div class="code-block" style="margin-bottom:8px;">POST /mcp                    MCP JSON-RPC handler (Streamable HTTP)\nPOST /api/mcp/test           { method, params }  GUI test endpoint\nGET  /api/mcp/info            Server metadata + connection instructions</div>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">System</h3>' +
+      '<div class="code-block" style="margin-bottom:8px;">GET  /api/health              Health check\nGET  /api/system              CPU, memory, disk, processes\nGET  /api/audit-log           Audit trail (filter: date, user, action)\nGET  /api/credentials         List credentials (encrypted)\nPOST /api/credentials         { name, type, value }  Add credential\nGET  /api/notifications       User notifications\nPATCH /api/notifications/:id  { read }  Mark read</div>',
+
+
+    /* ===== SCANNER SETUP ===== */
+    'scanners':
+      '<h2 style="color:var(--text-primary);font-size:var(--font-size-xl);margin-bottom:16px;">Scanner Setup</h2>' +
+      '<p style="margin-bottom:16px;">Vigil works without any scanners installed &mdash; scanning views show "Scanner not found" but everything else (dashboard, agents, incidents, compliance, reports) works normally. Install scanners for full functionality.</p>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">Nmap (Port Scanner)</h3>' +
+      '<div class="code-block" style="margin-bottom:12px;"># Ubuntu/Debian\nsudo apt install nmap\n\n# macOS\nbrew install nmap\n\n# Windows\n# Download from https://nmap.org/download.html\n\n# Verify\nnmap --version</div>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">Nuclei (Vulnerability Scanner)</h3>' +
+      '<div class="code-block" style="margin-bottom:12px;"># Install via Go\ngo install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest\n\n# Or download binary from GitHub releases\n# https://github.com/projectdiscovery/nuclei/releases\n\n# Update templates (9000+ community templates)\nnuclei -update-templates\n\n# Verify\nnuclei --version</div>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">Trivy (Container/Filesystem Scanner)</h3>' +
+      '<div class="code-block" style="margin-bottom:12px;"># Ubuntu/Debian\ncurl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin\n\n# macOS\nbrew install trivy\n\n# Verify\ntrivy --version</div>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">Nikto (Web Scanner)</h3>' +
+      '<div class="code-block" style="margin-bottom:12px;"># Ubuntu/Debian\nsudo apt install nikto\n\n# macOS\nbrew install nikto\n\n# Verify\nnikto -Version</div>' +
+      '<p style="color:var(--text-tertiary);font-size:var(--font-size-xs);">Note: Nikto is noisy and may trigger WAF/IDS alerts. Use against staging/test environments or with explicit authorization only.</p>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">OpenSSL (SSL Audit)</h3>' +
+      '<div class="code-block" style="margin-bottom:12px;"># Usually pre-installed on Linux/macOS\nopenssl version\n\n# Ubuntu/Debian (if missing)\nsudo apt install openssl</div>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">AI CLI Tools (BYOK)</h3>' +
+      '<div class="code-block" style="margin-bottom:12px;"># Claude Code (requires Anthropic subscription)\nnpm install -g @anthropic-ai/claude-code\n\n# Codex CLI (requires OpenAI API key)\nnpm install -g @openai/codex\n\n# Verify\nclaude --version\ncodex --version</div>' +
+      '<p>After installing, go to <strong>Settings &gt; AI Provider</strong> and select your preferred CLI. All AI features (triage, hunting, playbooks, analysis, summaries) use your AI subscription through these CLI tools.</p>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">Docker (Container Scanning)</h3>' +
+      '<div class="code-block" style="margin-bottom:12px;"># Install Docker\ncurl -fsSL https://get.docker.com | sudo sh\n\n# Add user to docker group\nsudo usermod -aG docker $USER\n\n# Verify\ndocker --version</div>' +
+      '<p>Docker is needed for container scanning (trivy image scans) and the Docker security view. Mount the Docker socket in docker-compose.yml or ensure the vigil user has group membership.</p>'
+  }
+};

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Vigil — The Security Agency That Never Sleeps. AI-powered security operations platform.">
+  <meta name="theme-color" content="#07080c">
+  <title>Vigil &mdash; Security Operations</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+
+  <link rel="stylesheet" href="css/terminal.css">
+
+  <!-- CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+
+  <style>
+    /* Inline favicon fallback */
+    .vigil-icon { font-size: 20px; }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════ LOGIN OVERLAY ══════════════════════ -->
+  <div id="login-overlay">
+    <div class="login-card">
+      <div class="login-logo">&#x1F6E1;</div>
+      <div class="login-title">VIGIL</div>
+      <div class="login-tagline">The Security Agency That Never Sleeps</div>
+      <form id="login-form" autocomplete="off">
+        <div class="login-field">
+          <input type="text" id="login-username" placeholder="Username" autocomplete="username" required>
+        </div>
+        <div class="login-field">
+          <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="login-btn" id="login-btn">Sign In</button>
+        <div class="login-error" id="login-error"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ APP LAYOUT ══════════════════════ -->
+  <div id="app-layout" style="display:none;">
+
+    <!-- ── Sidebar ── -->
+    <nav id="sidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">&#x1F6E1;</div>
+        <span class="sidebar-logo-text">VIGIL</span>
+      </div>
+
+      <div class="sidebar-nav" id="sidebar-nav">
+        <!-- Favorites (dynamic) -->
+        <div class="nav-group nav-favorites-group" id="nav-favorites" style="display:none;">
+          <div class="nav-group-header">
+            <span class="group-chevron">&#9662;</span>
+            <span>Favorites</span>
+          </div>
+          <div class="nav-group-items" id="nav-favorites-items"></div>
+        </div>
+
+        <!-- Threat Operations -->
+        <div class="nav-group" data-group="threat-ops">
+          <div class="nav-group-header">
+            <span class="group-chevron">&#9662;</span>
+            <span>Threat Operations</span>
+          </div>
+          <div class="nav-group-items">
+            <div class="nav-item active" data-view="dashboard" data-tooltip="Dashboard">
+              <span class="nav-item-icon">&#9673;</span>
+              <span class="nav-item-label">Dashboard</span>
+              <span class="nav-item-fav" data-fav="dashboard">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="threats" data-tooltip="Threat Feed">
+              <span class="nav-item-icon">&#9888;</span>
+              <span class="nav-item-label">Threat Feed</span>
+              <span class="nav-item-fav" data-fav="threats">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="triage" data-tooltip="Alert Triage">
+              <span class="nav-item-icon">&#9783;</span>
+              <span class="nav-item-label">Alert Triage</span>
+              <span class="nav-item-fav" data-fav="triage">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="hunt" data-tooltip="Threat Hunt">
+              <span class="nav-item-icon">&#128269;</span>
+              <span class="nav-item-label">Threat Hunt</span>
+              <span class="nav-item-fav" data-fav="hunt">&#9734;</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scanning -->
+        <div class="nav-group" data-group="scanning">
+          <div class="nav-group-header">
+            <span class="group-chevron">&#9662;</span>
+            <span>Scanning</span>
+          </div>
+          <div class="nav-group-items">
+            <div class="nav-item" data-view="port-scanner" data-tooltip="Port Scanner">
+              <span class="nav-item-icon">&#128225;</span>
+              <span class="nav-item-label">Port Scanner</span>
+              <span class="nav-item-fav" data-fav="port-scanner">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="vuln-scanner" data-tooltip="Vuln Scanner">
+              <span class="nav-item-icon">&#128737;</span>
+              <span class="nav-item-label">Vuln Scanner</span>
+              <span class="nav-item-fav" data-fav="vuln-scanner">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="web-scanner" data-tooltip="Web Scanner">
+              <span class="nav-item-icon">&#127760;</span>
+              <span class="nav-item-label">Web Scanner</span>
+              <span class="nav-item-fav" data-fav="web-scanner">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="container-security" data-tooltip="Container Security">
+              <span class="nav-item-icon">&#128230;</span>
+              <span class="nav-item-label">Container Security</span>
+              <span class="nav-item-fav" data-fav="container-security">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="ssl-monitor" data-tooltip="SSL Monitor">
+              <span class="nav-item-icon">&#128274;</span>
+              <span class="nav-item-label">SSL Monitor</span>
+              <span class="nav-item-fav" data-fav="ssl-monitor">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="dns-security" data-tooltip="DNS Security">
+              <span class="nav-item-icon">&#128421;</span>
+              <span class="nav-item-label">DNS Security</span>
+              <span class="nav-item-fav" data-fav="dns-security">&#9734;</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Intelligence -->
+        <div class="nav-group" data-group="intelligence">
+          <div class="nav-group-header">
+            <span class="group-chevron">&#9662;</span>
+            <span>Intelligence</span>
+          </div>
+          <div class="nav-group-items">
+            <div class="nav-item" data-view="osint" data-tooltip="OSINT">
+              <span class="nav-item-icon">&#128065;</span>
+              <span class="nav-item-label">OSINT</span>
+              <span class="nav-item-fav" data-fav="osint">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="findings" data-tooltip="Findings">
+              <span class="nav-item-icon">&#128196;</span>
+              <span class="nav-item-label">Findings</span>
+              <span class="nav-item-fav" data-fav="findings">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="timeline" data-tooltip="Attack Timeline">
+              <span class="nav-item-icon">&#128339;</span>
+              <span class="nav-item-label">Attack Timeline</span>
+              <span class="nav-item-fav" data-fav="timeline">&#9734;</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Agents -->
+        <div class="nav-group" data-group="agents">
+          <div class="nav-group-header">
+            <span class="group-chevron">&#9662;</span>
+            <span>Agents</span>
+          </div>
+          <div class="nav-group-items">
+            <div class="nav-item" data-view="agents" data-tooltip="Security Agents">
+              <span class="nav-item-icon">&#129302;</span>
+              <span class="nav-item-label">Security Agents</span>
+              <span class="nav-item-fav" data-fav="agents">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="campaigns" data-tooltip="Campaigns">
+              <span class="nav-item-icon">&#127919;</span>
+              <span class="nav-item-label">Campaigns</span>
+              <span class="nav-item-fav" data-fav="campaigns">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="pentest" data-tooltip="Pentest">
+              <span class="nav-item-icon">&#9889;</span>
+              <span class="nav-item-label">Pentest</span>
+              <span class="nav-item-fav" data-fav="pentest">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="playbooks" data-tooltip="Playbooks">
+              <span class="nav-item-icon">&#128214;</span>
+              <span class="nav-item-label">Playbooks</span>
+              <span class="nav-item-fav" data-fav="playbooks">&#9734;</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Compliance -->
+        <div class="nav-group" data-group="compliance">
+          <div class="nav-group-header">
+            <span class="group-chevron">&#9662;</span>
+            <span>Compliance</span>
+          </div>
+          <div class="nav-group-items">
+            <div class="nav-item" data-view="compliance" data-tooltip="Frameworks">
+              <span class="nav-item-icon">&#9745;</span>
+              <span class="nav-item-label">Frameworks</span>
+              <span class="nav-item-fav" data-fav="compliance">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="reports" data-tooltip="Reports">
+              <span class="nav-item-icon">&#128202;</span>
+              <span class="nav-item-label">Reports</span>
+              <span class="nav-item-fav" data-fav="reports">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="audit-log" data-tooltip="Audit Log">
+              <span class="nav-item-icon">&#128220;</span>
+              <span class="nav-item-label">Audit Log</span>
+              <span class="nav-item-fav" data-fav="audit-log">&#9734;</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI & Intel -->
+        <div class="nav-group" data-group="ai-intel">
+          <div class="nav-group-header">
+            <span class="group-chevron">&#9662;</span>
+            <span>AI &amp; Intel</span>
+          </div>
+          <div class="nav-group-items">
+            <div class="nav-item" data-view="ai-terminal" data-tooltip="AI Terminal">
+              <span class="nav-item-icon">&#9654;</span>
+              <span class="nav-item-label">AI Terminal</span>
+              <span class="nav-item-fav" data-fav="ai-terminal">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="ai-chat" data-tooltip="AI Chat">
+              <span class="nav-item-icon">&#128172;</span>
+              <span class="nav-item-label">AI Chat</span>
+              <span class="nav-item-fav" data-fav="ai-chat">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="knowledge" data-tooltip="Knowledge Base">
+              <span class="nav-item-icon">&#129504;</span>
+              <span class="nav-item-label">Knowledge Base</span>
+              <span class="nav-item-fav" data-fav="knowledge">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="mcp-playground" data-tooltip="MCP Playground">
+              <span class="nav-item-icon">&#128268;</span>
+              <span class="nav-item-label">MCP Playground</span>
+              <span class="nav-item-fav" data-fav="mcp-playground">&#9734;</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Infrastructure -->
+        <div class="nav-group" data-group="infrastructure">
+          <div class="nav-group-header">
+            <span class="group-chevron">&#9662;</span>
+            <span>Infrastructure</span>
+          </div>
+          <div class="nav-group-items">
+            <div class="nav-item" data-view="network" data-tooltip="Network">
+              <span class="nav-item-icon">&#128246;</span>
+              <span class="nav-item-label">Network</span>
+              <span class="nav-item-fav" data-fav="network">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="log-analysis" data-tooltip="Log Analysis">
+              <span class="nav-item-icon">&#128270;</span>
+              <span class="nav-item-label">Log Analysis</span>
+              <span class="nav-item-fav" data-fav="log-analysis">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="credentials" data-tooltip="Credentials">
+              <span class="nav-item-icon">&#128273;</span>
+              <span class="nav-item-label">Credentials</span>
+              <span class="nav-item-fav" data-fav="credentials">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="notifications" data-tooltip="Notifications">
+              <span class="nav-item-icon">&#128276;</span>
+              <span class="nav-item-label">Notifications</span>
+              <span class="nav-item-fav" data-fav="notifications">&#9734;</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- System -->
+        <div class="nav-group" data-group="system">
+          <div class="nav-group-header">
+            <span class="group-chevron">&#9662;</span>
+            <span>System</span>
+          </div>
+          <div class="nav-group-items">
+            <div class="nav-item" data-view="settings" data-tooltip="Settings">
+              <span class="nav-item-icon">&#9881;</span>
+              <span class="nav-item-label">Settings</span>
+              <span class="nav-item-fav" data-fav="settings">&#9734;</span>
+            </div>
+            <div class="nav-item" data-view="docs" data-tooltip="Docs">
+              <span class="nav-item-icon">&#10067;</span>
+              <span class="nav-item-label">Docs</span>
+              <span class="nav-item-fav" data-fav="docs">&#9734;</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ── Topbar ── -->
+    <header id="topbar">
+      <div class="topbar-hamburger" id="topbar-hamburger">&#9776;</div>
+      <div class="topbar-breadcrumb">
+        <span class="view-name" id="topbar-view-name">Dashboard</span>
+      </div>
+      <div class="topbar-spacer"></div>
+
+      <div class="risk-score-badge" id="risk-score-badge">
+        <span class="risk-score-dot" id="risk-score-dot" style="background:var(--cyan);"></span>
+        <span id="risk-score-text">Score: --</span>
+      </div>
+
+      <div class="topbar-bell" id="topbar-bell">
+        &#128276;
+        <span class="topbar-bell-count" id="bell-count" style="display:none;">0</span>
+      </div>
+
+      <div class="topbar-user" id="topbar-user">
+        <div class="topbar-user-avatar" id="user-avatar">A</div>
+        <span class="topbar-user-name" id="user-name">admin</span>
+      </div>
+      <div class="user-dropdown" id="user-dropdown">
+        <button class="user-dropdown-item" id="btn-profile">Profile</button>
+        <button class="user-dropdown-item" id="btn-logout">Sign Out</button>
+      </div>
+    </header>
+
+    <!-- ── Content ── -->
+    <main id="content">
+      <div id="view-dashboard" class="view-container"></div>
+      <div id="view-threats" class="view-container"></div>
+      <div id="view-triage" class="view-container"></div>
+      <div id="view-hunt" class="view-container"></div>
+      <div id="view-port-scanner" class="view-container"></div>
+      <div id="view-vuln-scanner" class="view-container"></div>
+      <div id="view-web-scanner" class="view-container"></div>
+      <div id="view-container-security" class="view-container"></div>
+      <div id="view-ssl-monitor" class="view-container"></div>
+      <div id="view-dns-security" class="view-container"></div>
+      <div id="view-osint" class="view-container"></div>
+      <div id="view-findings" class="view-container"></div>
+      <div id="view-timeline" class="view-container"></div>
+      <div id="view-agents" class="view-container"></div>
+      <div id="view-campaigns" class="view-container"></div>
+      <div id="view-pentest" class="view-container"></div>
+      <div id="view-playbooks" class="view-container"></div>
+      <div id="view-compliance" class="view-container"></div>
+      <div id="view-reports" class="view-container"></div>
+      <div id="view-audit-log" class="view-container"></div>
+      <div id="view-ai-terminal" class="view-container"></div>
+      <div id="view-ai-chat" class="view-container"></div>
+      <div id="view-knowledge" class="view-container"></div>
+      <div id="view-mcp-playground" class="view-container"></div>
+      <div id="view-network" class="view-container"></div>
+      <div id="view-log-analysis" class="view-container"></div>
+      <div id="view-credentials" class="view-container"></div>
+      <div id="view-notifications" class="view-container"></div>
+      <div id="view-settings" class="view-container"></div>
+      <div id="view-docs" class="view-container"></div>
+    </main>
+
+    <!-- ── Status Bar ── -->
+    <footer id="statusbar">
+      <div class="status-item">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-conn-text">Connecting...</span>
+      </div>
+      <div class="status-item" id="status-host">
+        <span>&#128421;</span>
+        <span id="status-hostname">--</span>
+      </div>
+      <div class="status-spacer"></div>
+      <div class="status-item">
+        <span id="status-last-update">Last update: --</span>
+      </div>
+      <div class="status-item">
+        <span>Vigil v1.0.0</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- ══════════════════════ SCRIPTS ══════════════════════ -->
+  <script src="js/app.js?v=1.1.0"></script>
+  <script src="js/modal.js?v=1.1.0"></script>
+  <script src="js/toast.js?v=1.1.0"></script>
+  <script src="js/charts.js?v=1.1.0"></script>
+
+  <!-- Views -->
+  <script src="js/views/dashboard.js?v=1.1.0"></script>
+  <script src="js/views/threats.js?v=1.1.0"></script>
+  <script src="js/views/triage.js?v=1.1.0"></script>
+  <script src="js/views/hunt.js?v=1.1.0"></script>
+  <script src="js/views/port-scanner.js?v=1.1.0"></script>
+  <script src="js/views/vuln-scanner.js?v=1.1.0"></script>
+  <script src="js/views/web-scanner.js?v=1.1.0"></script>
+  <script src="js/views/container-security.js?v=1.1.0"></script>
+  <script src="js/views/ssl-monitor.js?v=1.1.0"></script>
+  <script src="js/views/dns-security.js?v=1.1.0"></script>
+  <script src="js/views/osint.js?v=1.1.0"></script>
+  <script src="js/views/findings.js?v=1.1.0"></script>
+  <script src="js/views/timeline.js?v=1.1.0"></script>
+  <script src="js/views/agents.js?v=1.1.0"></script>
+  <script src="js/views/campaigns.js?v=1.1.0"></script>
+  <script src="js/views/pentest.js?v=1.1.0"></script>
+  <script src="js/views/playbooks.js?v=1.1.0"></script>
+  <script src="js/views/compliance.js?v=1.1.0"></script>
+  <script src="js/views/reports.js?v=1.1.0"></script>
+  <script src="js/views/audit-log.js?v=1.1.0"></script>
+  <script src="js/views/terminal.js?v=1.1.0"></script>
+  <script src="js/views/knowledge.js?v=1.1.0"></script>
+  <script src="js/views/mcp-playground.js?v=1.1.0"></script>
+  <script src="js/views/network.js?v=1.1.0"></script>
+  <script src="js/views/log-analysis.js?v=1.1.0"></script>
+  <script src="js/views/credentials.js?v=1.1.0"></script>
+  <script src="js/views/notifications.js?v=1.1.0"></script>
+  <script src="js/views/settings.js?v=1.1.0"></script>
+  <script src="js/views/docs.js?v=1.2.0"></script>
+</body>
+</html>
