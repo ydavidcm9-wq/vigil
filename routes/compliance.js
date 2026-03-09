@@ -362,7 +362,7 @@ module.exports = function (app, ctx) {
         notes: notes || '',
         artifacts: artifacts || [],
         collectedAt: new Date().toISOString(),
-        collectedBy: req.user ? req.user.user : 'unknown',
+        collectedBy: req.user ? req.user.username : 'unknown',
       };
 
       writeJSON(EVIDENCE_PATH, evidence);

@@ -153,7 +153,7 @@ module.exports = function (app, ctx) {
         scope: escapeHtml(scope || 'Full system'),
         status: 'generating',
         createdAt: new Date().toISOString(),
-        createdBy: req.user ? req.user.user : 'unknown',
+        createdBy: req.user ? req.user.username : 'unknown',
       };
 
       // Gather real data

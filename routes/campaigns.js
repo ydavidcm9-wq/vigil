@@ -92,7 +92,7 @@ module.exports = function (app, ctx) {
         agents: selectedAgents.map(a => ({ id: a.id, name: a.name, category: a.category, status: 'pending' })),
         runs: [],
         createdAt: new Date().toISOString(),
-        createdBy: req.user ? req.user.user : 'unknown',
+        createdBy: req.user ? req.user.username : 'unknown',
       };
 
       const campaigns = readJSON(CAMPAIGNS_PATH, []);
@@ -227,7 +227,7 @@ module.exports = function (app, ctx) {
       defenses: escapeHtml(defenses || ''),
       status: 'running',
       createdAt: new Date().toISOString(),
-      createdBy: req.user ? req.user.user : 'unknown',
+      createdBy: req.user ? req.user.username : 'unknown',
     };
 
     const sims = readJSON(PURPLE_PATH, []);

@@ -54,12 +54,12 @@ module.exports = function (app, ctx) {
           event: 'Incident created',
           detail: escapeHtml(description || 'No description provided'),
           timestamp: new Date().toISOString(),
-          actor: req.user ? req.user.user : 'system',
+          actor: req.user ? req.user.username : 'system',
         },
       ],
       assignee: null,
       createdAt: new Date().toISOString(),
-      createdBy: req.user ? req.user.user : 'unknown',
+      createdBy: req.user ? req.user.username : 'unknown',
       updatedAt: new Date().toISOString(),
     };
 
@@ -113,7 +113,7 @@ module.exports = function (app, ctx) {
         event: 'Incident updated',
         detail: changes.join('; '),
         timestamp: new Date().toISOString(),
-        actor: req.user ? req.user.user : 'system',
+        actor: req.user ? req.user.username : 'system',
       });
       incident.updatedAt = new Date().toISOString();
       if (status === 'closed') incident.closedAt = new Date().toISOString();
@@ -190,7 +190,7 @@ Be specific with exact commands where applicable. Tailor to the incident type. N
       event: escapeHtml(event),
       detail: escapeHtml(detail || ''),
       timestamp: new Date().toISOString(),
-      actor: req.user ? req.user.user : 'unknown',
+      actor: req.user ? req.user.username : 'unknown',
     });
     incident.updatedAt = new Date().toISOString();
 

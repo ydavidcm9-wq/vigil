@@ -3,122 +3,132 @@
  */
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
+const vault = require('../lib/credential-vault');
 
-const DATA = path.join(__dirname, '..', 'data');
-const VAULT_PATH = path.join(DATA, 'credential-vault.json');
-const ALGORITHM = 'aes-256-gcm';
+const SSH_KEY_DIR = path.join(__dirname, '..', 'data', 'ssh-keys');
 
 function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
 
-function readJSON(p, fallback) {
-  try { return JSON.parse(fs.readFileSync(p, 'utf8')); }
-  catch { return fallback; }
-}
-function writeJSON(p, data) {
-  // Atomic write: temp file + rename
-  fs.mkdirSync(path.dirname(p), { recursive: true });
-  const tmp = p + '.tmp.' + process.pid;
-  fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf8');
-  fs.renameSync(tmp, p);
-}
-
-function getEncryptionKey() {
-  // Use ENCRYPTION_KEY from env or generate a stable one from hostname + path
-  const envKey = process.env.ENCRYPTION_KEY;
-  if (envKey) {
-    return crypto.scryptSync(envKey, 'vigil-vault', 32);
-  }
-  // Deterministic fallback — NOT secure for production, but functional
-  const fallback = 'vigil-default-' + require('os').hostname() + '-vault-key';
-  return crypto.scryptSync(fallback, 'vigil-vault', 32);
-}
-
-function encrypt(text) {
-  const key = getEncryptionKey();
-  const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
-  let encrypted = cipher.update(text, 'utf8', 'hex');
-  encrypted += cipher.final('hex');
-  const tag = cipher.getAuthTag();
+function formatCredential(entry) {
+  const metadata = entry.metadata || {};
   return {
-    encrypted,
-    iv: iv.toString('hex'),
-    tag: tag.toString('hex'),
+    id: entry.id,
+    name: entry.name,
+    type: entry.type,
+    host: metadata.host || null,
+    port: metadata.port || null,
+    username: metadata.username || null,
+    tags: Array.isArray(metadata.tags) ? metadata.tags : [],
+    created_at: metadata.created || null,
+    updated_at: metadata.updated || null,
+    createdAt: metadata.created || null,
+    updatedAt: metadata.updated || null
   };
 }
 
-function decrypt(data) {
-  const key = getEncryptionKey();
-  const decipher = crypto.createDecipheriv(ALGORITHM, key, Buffer.from(data.iv, 'hex'));
-  decipher.setAuthTag(Buffer.from(data.tag, 'hex'));
-  let decrypted = decipher.update(data.encrypted, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  return decrypted;
+function buildConnectCommand(entry) {
+  const metadata = entry.metadata || {};
+  const host = String(metadata.host || '').trim();
+  const port = Number.isFinite(Number(metadata.port)) ? Number(metadata.port) : 22;
+  const username = String(metadata.username || '').trim();
+
+  if (!host) {
+    throw new Error('Credential is missing metadata.host for terminal injection');
+  }
+
+  const target = username ? `${username}@${host}` : host;
+
+  if (entry.type === 'ssh_key') {
+    fs.mkdirSync(SSH_KEY_DIR, { recursive: true });
+    const fileName = (entry.id || entry.name).replace(/[^a-zA-Z0-9_-]/g, '');
+    const keyPath = path.join(SSH_KEY_DIR, `${fileName}.key`);
+    fs.writeFileSync(keyPath, entry.value, { encoding: 'utf8', mode: 0o600 });
+    return `ssh -i "${keyPath}" -p ${port} ${target}`;
+  }
+
+  if (entry.type === 'password') {
+    return `ssh -p ${port} ${target}`;
+  }
+
+  throw new Error(`Credential type "${entry.type}" cannot be injected into the terminal`);
 }
 
 module.exports = function (app, ctx) {
-  const { requireAuth, requireAdmin } = ctx;
+  const { requireAdmin } = ctx;
 
-  // GET /api/credentials — list (names + types, no values)
+  // GET /api/credentials — list (metadata only, no decrypted values)
   app.get('/api/credentials', requireAdmin, (req, res) => {
-    const vault = readJSON(VAULT_PATH, []);
-    const list = vault.map(c => ({
-      name: c.name,
-      type: c.type,
-      createdAt: c.createdAt,
-      updatedAt: c.updatedAt || null,
-    }));
-    res.json({ credentials: list });
+    const credentials = vault.listCredentials().map(formatCredential);
+    res.json({ credentials });
   });
 
   // POST /api/credentials — store credential
   app.post('/api/credentials', requireAdmin, (req, res) => {
-    const { name, type, value } = req.body;
-    if (!name || !type || !value) return res.status(400).json({ error: 'name, type, and value required' });
+    try {
+      const { name, type, value, secret, host, port, username, tags } = req.body || {};
+      const resolvedValue = value || secret;
+      if (!name || !type || !resolvedValue) {
+        return res.status(400).json({ error: 'name, type, and value required' });
+      }
 
-    const vault = readJSON(VAULT_PATH, []);
+      if (vault.hasCredential(name)) {
+        return res.status(409).json({ error: 'Credential with this name already exists' });
+      }
 
-    // Check for duplicate name
-    if (vault.find(c => c.name === name)) {
-      return res.status(409).json({ error: 'Credential with this name already exists' });
+      const saved = vault.storeCredential(String(name).trim(), String(type).trim(), String(resolvedValue), {
+        host: host ? String(host).trim() : null,
+        port: port ? Number(port) : null,
+        username: username ? String(username).trim() : null,
+        tags: Array.isArray(tags)
+          ? tags.map(tag => String(tag).trim()).filter(Boolean)
+          : String(tags || '').split(',').map(tag => tag.trim()).filter(Boolean)
+      });
+
+      console.log(`[VAULT] Credential stored: ${saved.name} (${saved.type})`);
+      res.json({ success: true, credential: formatCredential(saved), id: saved.id, name: saved.name });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
     }
-
-    const encryptedData = encrypt(value);
-    vault.push({
-      name: escapeHtml(name),
-      type: escapeHtml(type),
-      data: encryptedData,
-      createdAt: new Date().toISOString(),
-    });
-    writeJSON(VAULT_PATH, vault);
-
-    console.log(`[VAULT] Credential stored: ${name} (${type})`);
-    res.json({ success: true, name });
   });
 
-  // GET /api/credentials/:name — get decrypted value
-  app.get('/api/credentials/:name', requireAdmin, (req, res) => {
-    const vault = readJSON(VAULT_PATH, []);
-    const cred = vault.find(c => c.name === req.params.name);
+  // GET /api/credentials/:identifier — get decrypted value by id or name
+  app.get('/api/credentials/:identifier', requireAdmin, (req, res) => {
+    const cred = vault.getCredential(req.params.identifier);
     if (!cred) return res.status(404).json({ error: 'Credential not found' });
 
+    res.json({
+      ...formatCredential(cred),
+      value: cred.value,
+      secret: cred.value
+    });
+  });
+
+  // POST /api/credentials/:identifier/inject — build terminal command for SSH connection
+  app.post('/api/credentials/:identifier/inject', requireAdmin, (req, res) => {
     try {
-      const value = decrypt(cred.data);
-      res.json({ name: cred.name, type: cred.type, value, createdAt: cred.createdAt });
+      const cred = vault.getCredential(req.params.identifier);
+      if (!cred) return res.status(404).json({ error: 'Credential not found' });
+
+      const command = buildConnectCommand(cred);
+      res.json({
+        success: true,
+        id: cred.id,
+        name: cred.name,
+        command
+      });
     } catch (e) {
-      res.status(500).json({ error: 'Decryption failed. Encryption key may have changed.' });
+      res.status(400).json({ error: e.message });
     }
   });
 
-  // DELETE /api/credentials/:name — remove
-  app.delete('/api/credentials/:name', requireAdmin, (req, res) => {
-    let vault = readJSON(VAULT_PATH, []);
-    const before = vault.length;
-    vault = vault.filter(c => c.name !== req.params.name);
-    if (vault.length === before) return res.status(404).json({ error: 'Credential not found' });
-    writeJSON(VAULT_PATH, vault);
-    console.log(`[VAULT] Credential deleted: ${req.params.name}`);
+  // DELETE /api/credentials/:identifier — remove by id or name
+  app.delete('/api/credentials/:identifier', requireAdmin, (req, res) => {
+    const cred = vault.getCredential(req.params.identifier);
+    if (!cred) return res.status(404).json({ error: 'Credential not found' });
+    if (!vault.deleteCredential(req.params.identifier)) {
+      return res.status(404).json({ error: 'Credential not found' });
+    }
+    console.log(`[VAULT] Credential deleted: ${cred.name}`);
     res.json({ success: true });
   });
 };

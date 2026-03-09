@@ -65,7 +65,7 @@ module.exports = function (app, ctx) {
       findings: [],
       findingsCount: 0,
       createdAt: new Date().toISOString(),
-      createdBy: req.user ? req.user.user : 'unknown',
+      createdBy: req.user ? req.user.username : 'unknown',
     };
 
     const scans = readJSON(SCANS_PATH, []);

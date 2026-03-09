@@ -137,7 +137,7 @@ Assess the SSL configuration, highlight any issues, and recommend improvements.`
     monitors.push({
       domain: escapeHtml(domain),
       addedAt: new Date().toISOString(),
-      addedBy: req.user ? req.user.user : 'unknown',
+      addedBy: req.user ? req.user.username : 'unknown',
       lastCheck: null,
       lastGrade: null,
       lastDaysLeft: null,

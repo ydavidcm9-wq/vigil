@@ -52,7 +52,7 @@ cd vigil
 cp .env.example .env
 npm install
 npm start
-# → http://localhost:4100  (admin / admin)
+# → http://localhost:4100  (use VIGIL_USER/VIGIL_PASS, or read the generated bootstrap password from the startup logs)
 ```
 
 ### Option 2: Docker Compose
@@ -62,7 +62,7 @@ git clone https://github.com/vigil-agency/vigil.git
 cd vigil
 cp .env.example .env
 docker compose up -d
-# → http://localhost:4100  (admin / admin)
+# → http://localhost:4100  (use VIGIL_USER/VIGIL_PASS, or read the generated bootstrap password from the startup logs)
 ```
 
 This starts Vigil + PostgreSQL 17. Scanner tools (nmap, nuclei, trivy, nikto) are included in the Docker image.
@@ -73,7 +73,7 @@ This starts Vigil + PostgreSQL 17. Scanner tools (nmap, nuclei, trivy, nikto) ar
 docker run -d \
   -p 4100:4100 \
   -e VIGIL_USER=admin \
-  -e VIGIL_PASS=admin \
+  -e VIGIL_PASS=change-me-now \
   vigil-agency/vigil:latest
 ```
 
@@ -229,7 +229,7 @@ Copy `.env.example` to `.env` and customize:
 |----------|---------|-------------|
 | `VIGIL_PORT` | `4100` | Server port |
 | `VIGIL_USER` | `admin` | Default admin username |
-| `VIGIL_PASS` | `admin` | Default admin password (change immediately) |
+| `VIGIL_PASS` | auto-generated | Bootstrap admin password. Set it explicitly or read the startup logs on first launch. |
 | `DATABASE_URL` | — | PostgreSQL connection string (optional) |
 | `AI_PROVIDER` | — | `claude-cli` or `codex` (optional) |
 | `ENCRYPTION_KEY` | auto | 32-byte hex for credential vault |
@@ -249,6 +249,9 @@ Copy `.env.example` to `.env` and customize:
 ## Testing
 
 ```bash
+# Release regression test
+npm test
+
 # Health check
 curl http://localhost:4100/api/health
 
@@ -256,11 +259,6 @@ curl http://localhost:4100/api/health
 curl -b "vigil_session=TOKEN" http://localhost:4100/api/system
 curl -b "vigil_session=TOKEN" http://localhost:4100/api/scans
 curl -b "vigil_session=TOKEN" http://localhost:4100/api/vulnerabilities
-
-# Smoke tests
-node scripts/chat-smoke.mjs
-node scripts/agents-smoke.mjs
-node scripts/brain-smoke.mjs
 ```
 
 ## Contributing

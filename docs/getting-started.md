@@ -18,7 +18,7 @@ cp .env.example .env
 docker compose up -d
 
 # Access at http://localhost:4100
-# Default login: admin / admin
+# Default login: set `VIGIL_USER`/`VIGIL_PASS`, or read the generated bootstrap password from the startup logs
 ```
 
 Docker Compose starts two services:
@@ -93,7 +93,7 @@ Without scanners installed, scanning views will show "Scanner not found" message
 ## First Login
 
 1. Open http://localhost:4100 in your browser
-2. Enter the default credentials: **admin** / **admin**
+2. Sign in with the `VIGIL_USER`/`VIGIL_PASS` you configured, or use the generated bootstrap password shown in the startup logs
 3. You will land on the Dashboard view showing your security posture score
 
 **Change your password immediately** after first login via Settings > Account.

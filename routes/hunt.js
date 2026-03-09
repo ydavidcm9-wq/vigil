@@ -121,7 +121,7 @@ module.exports = function (app, ctx) {
         analysis: null,
         verdict: null,
         createdAt: new Date().toISOString(),
-        createdBy: req.user ? req.user.user : 'unknown',
+        createdBy: req.user ? req.user.username : 'unknown',
       };
 
       const isWin = process.platform === 'win32';

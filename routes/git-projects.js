@@ -33,6 +33,11 @@ function getRepoCwd(project) {
   return project.localPath || null;
 }
 
+function isValidRemoteUrl(remoteUrl) {
+  if (!remoteUrl || typeof remoteUrl !== 'string' || remoteUrl.length > 2048) return false;
+  return /^(https:\/\/|git@)[a-zA-Z0-9._:@/-]+(\.git)?$/.test(remoteUrl.trim());
+}
+
 /** Build git env with auth for private repos */
 function getGitEnv(project) {
   const env = { ...process.env };
@@ -65,7 +70,7 @@ function getAuthRemoteUrl(project) {
 }
 
 module.exports = function (app, ctx) {
-  const { requireAdmin, requireRole, execCommand } = ctx;
+  const { requireAdmin, requireRole, execCommand, execFileSafe } = ctx;
 
   // Expose getActiveProject and getRepoCwd on ctx for git-enhanced.js
   ctx.getActiveGitProject = getActiveProject;
@@ -93,6 +98,9 @@ module.exports = function (app, ctx) {
     const { name, localPath, remoteUrl, credentialId, description } = req.body;
     if (!name) return res.status(400).json({ error: 'Name required' });
     if (!localPath && !remoteUrl) return res.status(400).json({ error: 'Local path or remote URL required' });
+    if (remoteUrl && !isValidRemoteUrl(remoteUrl)) {
+      return res.status(400).json({ error: 'Remote URL must be an HTTPS or SSH git URL' });
+    }
 
     const id = require('crypto').randomUUID();
     const project = {
@@ -111,8 +119,10 @@ module.exports = function (app, ctx) {
       try {
         const env = getGitEnv(project);
         const authUrl = getAuthRemoteUrl(project) || remoteUrl;
-        const safeUrl = authUrl.replace(/"/g, '');
-        await execCommand(`git clone "${safeUrl}" "${cloneDir}"`, { cwd: __dirname, timeout: 120000, env });
+        const result = await execFileSafe('git', ['clone', authUrl, cloneDir], { cwd: __dirname, timeout: 120000, env });
+        if (result.code !== 0) {
+          return res.status(500).json({ error: 'Clone failed: ' + (result.stderr || result.stdout || 'Unknown error') });
+        }
         project.localPath = cloneDir;
       } catch (e) {
         return res.status(500).json({ error: 'Clone failed: ' + (e.message || e.stderr || 'Unknown error') });
@@ -168,21 +178,26 @@ module.exports = function (app, ctx) {
     try {
       if (localPath) {
         if (!fs.existsSync(localPath)) return res.json({ success: false, error: 'Path does not exist' });
-        const r = await execCommand('git rev-parse --is-inside-work-tree', { cwd: localPath, timeout: 5000 });
-        if (r.stdout.trim() === 'true') {
-          const branch = await execCommand('git branch --show-current', { cwd: localPath, timeout: 5000 });
+        const r = await execFileSafe('git', ['rev-parse', '--is-inside-work-tree'], { cwd: localPath, timeout: 5000 });
+        if (r.code === 0 && r.stdout.trim() === 'true') {
+          const branch = await execFileSafe('git', ['branch', '--show-current'], { cwd: localPath, timeout: 5000 });
           return res.json({ success: true, message: 'Git repo found', branch: branch.stdout.trim() });
         }
         return res.json({ success: false, error: 'Not a git repository' });
       }
       if (remoteUrl) {
+        if (!isValidRemoteUrl(remoteUrl)) {
+          return res.json({ success: false, error: 'Invalid remote URL' });
+        }
         const tmpProject = { credentialId, remoteUrl };
         const env = getGitEnv(tmpProject);
         const authUrl = getAuthRemoteUrl(tmpProject) || remoteUrl;
-        const safeUrl = authUrl.replace(/"/g, '');
-        const r = await execCommand(`git ls-remote --heads "${safeUrl}" 2>&1 | head -5`, { cwd: __dirname, timeout: 30000, env });
-        if (r.stdout.trim()) return res.json({ success: true, message: 'Remote accessible', refs: r.stdout.trim().split('\n').length + ' refs' });
-        return res.json({ success: false, error: r.stderr || 'Could not access remote' });
+        const r = await execFileSafe('git', ['ls-remote', '--heads', authUrl], { cwd: __dirname, timeout: 30000, env });
+        const refs = r.stdout.trim().split('\n').filter(Boolean);
+        if (r.code === 0 && refs.length > 0) {
+          return res.json({ success: true, message: 'Remote accessible', refs: refs.length + ' refs' });
+        }
+        return res.json({ success: false, error: r.stderr || r.stdout || 'Could not access remote' });
       }
       res.json({ success: false, error: 'Provide localPath or remoteUrl' });
     } catch (e) { res.json({ success: false, error: e.message }); }

@@ -476,8 +476,29 @@
         if (data.success) {
           State.user = data.user || { username: user };
           showApp();
+        } else if (data.requires2FA && data.challengeToken) {
+          var code = window.prompt('Enter your 2FA code');
+          if (!code) {
+            errorEl.textContent = '2FA code required';
+            return;
+          }
+          return fetch('/api/auth/login/2fa', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ challengeToken: data.challengeToken, code: code.trim() })
+          })
+          .then(function(r) { return r.json(); })
+          .then(function(twoFAData) {
+            if (twoFAData.success) {
+              State.user = twoFAData.user || { username: user };
+              showApp();
+            } else {
+              errorEl.textContent = twoFAData.error || twoFAData.message || 'Invalid 2FA code';
+            }
+          });
         } else {
-          errorEl.textContent = data.message || 'Invalid credentials';
+          errorEl.textContent = data.error || data.message || 'Invalid credentials';
         }
       })
       .catch(function() {

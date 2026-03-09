@@ -33,7 +33,7 @@ jobs:
           function check(d){
             fs.readdirSync(d,{withFileTypes:true}).forEach(e=>{
               const p=path.join(d,e.name);
-              if(e.isDirectory()&&!['node_modules','landing','.git'].includes(e.name))check(p);
+              if(e.isDirectory()&&!['node_modules','landing','.git','test'].includes(e.name))check(p);
               else if(e.name.endsWith('.js'))try{require(p)}catch(err){
                 if(err instanceof SyntaxError){console.error('Syntax error:',p,err.message);errors++}
               }
@@ -44,23 +44,5 @@ jobs:
           console.log('All JS files parsed successfully');
           "
 
-      - name: Start server
-        run: |
-          node server.js &
-          sleep 3
-
-      - name: Health check
-        run: curl -sf http://localhost:4100/api/health
-
-      - name: Login and smoke test
-        run: |
-          TOKEN=$(curl -sf -X POST http://localhost:4100/api/auth/login \
-            -H 'Content-Type: application/json' \
-            -d '{"username":"admin","password":"admin"}' \
-            | node -e "process.stdin.on('data',d=>{const j=JSON.parse(d);console.log(j.token||j.session||'')})")
-          if [ -n "$TOKEN" ]; then
-            curl -sf -b "vigil_session=$TOKEN" http://localhost:4100/api/system
-            echo "Smoke test passed"
-          else
-            echo "Login returned no token — skipping auth tests (expected on some configs)"
-          fi
+      - name: Run release tests
+        run: npm test

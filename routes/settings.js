@@ -59,7 +59,7 @@ module.exports = function (app, ctx) {
     settings.updatedAt = new Date().toISOString();
     writeJSON(SETTINGS_PATH, settings);
 
-    console.log(`[SETTINGS] ${key} updated by ${req.user ? req.user.user : 'unknown'}`);
+    console.log(`[SETTINGS] ${key} updated by ${req.user ? req.user.username : 'unknown'}`);
     res.json({ success: true, key, value });
   });
 

@@ -63,7 +63,7 @@ Views.docs = {
     'getting-started':
       '<h2 style="color:var(--text-primary);font-size:var(--font-size-xl);margin-bottom:16px;">Getting Started with Vigil</h2>' +
       '<h3 style="color:var(--text-primary);font-size:var(--font-size-lg);margin:16px 0 8px;">Quick Start</h3>' +
-      '<div class="code-block" style="margin-bottom:16px;">cd vigil && npm install && npm start\n# Access: http://localhost:4100\n# Default: admin / admin (change immediately)</div>' +
+      '<div class="code-block" style="margin-bottom:16px;">cd vigil && npm install && npm start\n# Access: http://localhost:4100\n# Set VIGIL_USER/VIGIL_PASS, or read the generated bootstrap password from the startup logs</div>' +
       '<h3 style="color:var(--text-primary);font-size:var(--font-size-lg);margin:16px 0 8px;">Requirements</h3>' +
       '<ul style="padding-left:20px;list-style:disc;">' +
         '<li>Node.js 20+</li>' +
@@ -73,7 +73,7 @@ Views.docs = {
       '</ul>' +
       '<h3 style="color:var(--text-primary);font-size:var(--font-size-lg);margin:16px 0 8px;">First Steps</h3>' +
       '<ol style="padding-left:20px;list-style:decimal;">' +
-        '<li style="margin-bottom:6px;">Log in with default credentials (<strong>admin / admin</strong>)</li>' +
+        '<li style="margin-bottom:6px;">Log in with the configured bootstrap credentials or the generated password from the startup logs</li>' +
         '<li style="margin-bottom:6px;">Go to <strong>Settings &gt; Account</strong> and change your password</li>' +
         '<li style="margin-bottom:6px;">Go to <strong>Settings &gt; AI Provider</strong> and select Claude CLI, Claude Code, or Codex CLI</li>' +
         '<li style="margin-bottom:6px;">Go to <strong>Settings &gt; Scanners</strong> to verify installed tools (nmap, nuclei, trivy)</li>' +
@@ -1130,7 +1130,7 @@ Views.docs = {
       '<p style="margin-bottom:12px;">All endpoints require authentication via <code style="background:var(--well);padding:1px 4px;border-radius:3px;">vigil_session</code> cookie or <code style="background:var(--well);padding:1px 4px;border-radius:3px;">Authorization: Bearer TOKEN</code> header.</p>' +
 
       '<h3 style="color:var(--cyan);margin:16px 0 8px;">Authentication</h3>' +
-      '<div class="code-block" style="margin-bottom:8px;">POST /api/auth/login        { username, password }\nPOST /api/auth/logout\nGET  /api/auth/check\nPOST /api/auth/2fa/setup    (returns QR code)\nPOST /api/auth/2fa/verify   { code }</div>' +
+      '<div class="code-block" style="margin-bottom:8px;">POST /api/auth/login        { username, password }\nPOST /api/auth/login/2fa    { challengeToken, code }\nPOST /api/auth/logout\nGET  /api/auth/check\nPOST /api/auth/2fa/setup    (returns QR code)\nPOST /api/auth/2fa/verify   { code }</div>' +
 
       '<h3 style="color:var(--cyan);margin:16px 0 8px;">Dashboard &amp; Posture</h3>' +
       '<div class="code-block" style="margin-bottom:8px;">GET  /api/posture              Security posture score (0-100)\nGET  /api/dashboard/stats      Threats, findings, scan time, compliance %\nGET  /api/dashboard/threat-activity   24h threat timeline\nGET  /api/dashboard/severity-breakdown  Findings by severity\nGET  /api/briefing             AI security summary\nGET  /api/timeline?range=24h&type=all  Attack timeline events</div>' +

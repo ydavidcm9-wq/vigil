@@ -63,8 +63,8 @@ module.exports = function (app, ctx) {
   app.get('/api/git/diff/:hash', requireAdmin, async (req, res) => {
     try {
       const hash = req.params.hash.replace(/[^a-f0-9]/gi, '').slice(0, 40);
-      const r = await execCommand(`git show --stat --format="" ${hash}`, { cwd: getCwd(), timeout: 10000 });
-      const d = await execCommand(`git show --format="" ${hash}`, { cwd: getCwd(), timeout: 10000 });
+      const r = await gitExec(['show', '--stat', '--format=', hash]);
+      const d = await gitExec(['show', '--format=', hash]);
       res.json({ stat: r.stdout, diff: d.stdout.substring(0, 50000) });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
@@ -103,15 +103,15 @@ module.exports = function (app, ctx) {
 
   app.post('/api/git/stash', requireRole('analyst'), async (req, res) => {
     try {
-      const msg = (req.body.message || 'Quick stash').replace(/"/g, '\\"');
-      const r = await execCommand(`git stash push -m "${msg}"`, { cwd: getCwd(), timeout: 10000 });
+      const msg = String(req.body.message || 'Quick stash');
+      const r = await gitExec(['stash', 'push', '-m', msg]);
       res.json({ success: true, output: r.stdout });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
 
   app.post('/api/git/stash/pop', requireRole('analyst'), async (req, res) => {
     try {
-      const r = await execCommand('git stash pop', { cwd: getCwd(), timeout: 10000 });
+      const r = await gitExec(['stash', 'pop']);
       res.json({ success: true, output: r.stdout });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
@@ -121,9 +121,8 @@ module.exports = function (app, ctx) {
     try {
       const { message, addAll } = req.body;
       if (!message) return res.status(400).json({ error: 'Commit message required' });
-      if (addAll) await execCommand('git add -A', { cwd: getCwd() });
-      const safeMsg = message.replace(/"/g, '\\"').replace(/\$/g, '\\$');
-      const r = await execCommand(`git commit -m "${safeMsg}"`, { cwd: getCwd(), timeout: 15000 });
+      if (addAll) await gitExec(['add', '-A']);
+      const r = await gitExec(['commit', '-m', String(message)], { timeout: 15000 });
       res.json({ success: true, output: r.stdout });
     } catch (e) { res.status(500).json({ error: e.message }); }
   });
@@ -262,10 +261,10 @@ Return ONLY the JSON object, no markdown.`;
   app.post('/api/git/ai-pr-description', requireRole('analyst'), async (req, res) => {
     try {
       const base = (req.body.base || 'main').replace(/[^a-zA-Z0-9/_.-]/g, '');
-      const current = (await execCommand('git branch --show-current', { cwd: getCwd() })).stdout.trim();
+      const current = (await gitExec(['branch', '--show-current'])).stdout.trim();
       const [diffStat, log] = await Promise.all([
-        execCommand(`git diff ${base}...HEAD --stat`, { cwd: getCwd(), timeout: 10000 }),
-        execCommand(`git log ${base}...HEAD --oneline`, { cwd: getCwd(), timeout: 10000 }),
+        gitExec(['diff', `${base}...HEAD`, '--stat']),
+        gitExec(['log', `${base}...HEAD`, '--oneline']),
       ]);
       if (!log.stdout.trim()) return res.json({ title: '', body: '', error: 'No commits ahead of ' + base });
 
@@ -303,7 +302,7 @@ Return ONLY the JSON object, no markdown.`;
       let conflictContent = '';
       for (const f of files.slice(0, 5)) {
         try {
-          const content = await execCommand(`git diff ${f.replace(/"/g, '\\"')}`, { cwd: getCwd(), timeout: 5000 });
+          const content = await gitExec(['diff', '--', f]);
           conflictContent += `\n--- ${f} ---\n${content.stdout.substring(0, 2000)}\n`;
         } catch {}
       }

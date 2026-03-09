@@ -4,23 +4,39 @@
   "description": "The Security Agency That Never Sleeps — AI-powered security operations platform",
   "main": "server.js",
   "private": true,
-  "engines": { "node": ">=18.0.0" },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "test": "node --test"
   },
-  "keywords": ["security", "ai", "mcp", "soc", "vulnerability-scanner", "threat-detection"],
+  "keywords": [
+    "security",
+    "ai",
+    "mcp",
+    "soc",
+    "vulnerability-scanner",
+    "threat-detection"
+  ],
   "author": "Vigil Agency <hello@vigil.agency>",
   "license": "AGPL-3.0",
   "homepage": "https://vigil.agency",
-  "repository": { "type": "git", "url": "https://github.com/vigil-agency/vigil.git" },
-  "bugs": { "url": "https://github.com/vigil-agency/vigil/issues" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vigil-agency/vigil.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vigil-agency/vigil/issues"
+  },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
     "express": "^4.21.0",
-    "socket.io": "^4.7.5",
-    "pg": "^8.13.0",
-    "node-pty": "^1.0.0",
     "multer": "^1.4.5-lts.1",
-    "@modelcontextprotocol/sdk": "^1.12.1"
+    "node-pty": "^1.0.0",
+    "pg": "^8.13.0",
+    "socket.io": "^4.7.5",
+    "zod": "^4.3.6"
   }
 }

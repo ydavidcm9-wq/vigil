@@ -151,7 +151,7 @@ Keep it concise and actionable. No markdown headers.`;
           if (finding) {
             finding.status = status;
             finding.statusUpdatedAt = new Date().toISOString();
-            finding.statusUpdatedBy = req.user ? req.user.user : 'unknown';
+            finding.statusUpdatedBy = req.user ? req.user.username : 'unknown';
             updated = true;
             break;
           }

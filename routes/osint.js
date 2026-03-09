@@ -648,7 +648,7 @@ Assess: What does the registration pattern reveal about this person (professiona
 
       result.id = scanId;
       result.createdAt = new Date().toISOString();
-      result.createdBy = req.user ? req.user.user : 'unknown';
+      result.createdBy = req.user ? req.user.username : 'unknown';
 
       // Persist
       const results = readJSON(RECON_PATH, []);

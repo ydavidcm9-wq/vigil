@@ -10,7 +10,7 @@ License: AGPL-3.0
 ```bash
 npm install && npm start
 # Access: http://localhost:4100
-# Default: admin / admin (change immediately)
+# Default: set VIGIL_USER/VIGIL_PASS, or read the generated bootstrap password from the startup logs
 ```
 
 ## Bare Metal Install (Ubuntu/Debian)
@@ -700,8 +700,11 @@ Users bring their own AI subscriptions. The app shells out to locally-installed 
 ## Auth
 - PBKDF2 password hashing (lib/users.js)
 - Session tokens in cookies (`vigil_session`) or Bearer header
-- Optional TOTP 2FA (lib/totp.js)
-- Default admin created on first run (users.json)
+- Optional TOTP 2FA via challenge-token flow (lib/totp.js)
+  - Login returns `challengeToken` when 2FA enabled; client sends it to `POST /api/auth/login/2fa` with TOTP code
+  - Challenge tokens are IP-bound with 5min TTL
+- Bootstrap admin: created on first run; password auto-generated if `VIGIL_PASS` not set (printed to startup logs)
+- `GET /api/auth/check` — unauthenticated session check (returns `authenticated: true/false`)
 - RBAC roles: admin, analyst, viewer
 
 ## Database
@@ -757,6 +760,9 @@ Implemented in `app.js` via `initHotkeys()`. All shortcuts work in the web brows
 
 ## Testing
 ```bash
+# Release regression test (node:test suite — auth, 2FA, credentials, sessions)
+npm test
+
 # Start server
 npm start
 

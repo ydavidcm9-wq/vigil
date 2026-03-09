@@ -1,29 +1,32 @@
 #!/usr/bin/env node
 
 /**
- * Vigil — Create Admin User
+ * Vigil — Create or update a local user in the JSON-backed auth store.
  *
- * Reads ADMIN_EMAIL and ADMIN_PASSWORD from env or .env.local.
- * Connects to DATABASE_URL and inserts an admin user with bcrypt-hashed password.
+ * Supported env vars:
+ *   VIGIL_USER / ADMIN_EMAIL      Username to create or update
+ *   VIGIL_PASS / ADMIN_PASSWORD   Password to set
+ *   VIGIL_ROLE                    admin | analyst | viewer (default: admin)
  *
  * Usage:
  *   node scripts/create-user.mjs
- *   ADMIN_EMAIL=admin@test.com ADMIN_PASSWORD=secret node scripts/create-user.mjs
+ *   VIGIL_USER=alice VIGIL_PASS='correct horse battery staple' node scripts/create-user.mjs
+ *   node scripts/create-user.mjs --update-password
  */
 
 import { readFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
-import pg from "pg";
-import bcrypt from "bcryptjs";
-import crypto from "crypto";
+import { createRequire } from "module";
+
+const require = createRequire(import.meta.url);
+const { getUser, createUser, updateUser } = require("../lib/users");
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
 
-// ── Load .env.local ───────────────────────────────────────────────
-function loadEnvFile() {
-  const envPath = resolve(ROOT, ".env.local");
+function loadEnvFile(fileName) {
+  const envPath = resolve(ROOT, fileName);
   try {
     const content = readFileSync(envPath, "utf-8");
     for (const line of content.split("\n")) {
@@ -38,103 +41,43 @@ function loadEnvFile() {
       }
     }
   } catch {
-    // .env.local is optional — env vars can be set directly
+    // Optional env file.
   }
 }
 
-loadEnvFile();
+loadEnvFile(".env");
+loadEnvFile(".env.local");
 
-// ── Validate required config ──────────────────────────────────────
-const DATABASE_URL = process.env.DATABASE_URL;
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const username = (process.env.VIGIL_USER || process.env.ADMIN_EMAIL || "admin").trim();
+const password = process.env.VIGIL_PASS || process.env.ADMIN_PASSWORD || "";
+const role = (process.env.VIGIL_ROLE || "admin").trim().toLowerCase();
+const updatePasswordOnly = process.argv.includes("--update-password");
 
-if (!DATABASE_URL) {
-  console.error("ERROR: DATABASE_URL is required.");
-  console.error("Set it in .env.local or as an environment variable.");
+function fail(message) {
+  console.error(`CREATE_USER_FAIL: ${message}`);
   process.exit(1);
 }
 
-if (!ADMIN_EMAIL) {
-  console.error("ERROR: ADMIN_EMAIL is required.");
-  console.error("Set it in .env.local or as an environment variable.");
-  process.exit(1);
+if (!username) fail("VIGIL_USER (or ADMIN_EMAIL) is required.");
+if (!password) fail("VIGIL_PASS (or ADMIN_PASSWORD) is required.");
+if (password.length < 8) fail("Password must be at least 8 characters.");
+if (!["admin", "analyst", "viewer"].includes(role)) {
+  fail("VIGIL_ROLE must be one of: admin, analyst, viewer.");
 }
 
-if (!ADMIN_PASSWORD) {
-  console.error("ERROR: ADMIN_PASSWORD is required.");
-  console.error("Set it in .env.local or as an environment variable.");
-  process.exit(1);
-}
+const existing = getUser(username);
 
-if (ADMIN_PASSWORD.length < 8) {
-  console.error("ERROR: ADMIN_PASSWORD must be at least 8 characters.");
-  process.exit(1);
-}
-
-// ── Create user ───────────────────────────────────────────────────
-async function createUser() {
-  const pool = new pg.Pool({ connectionString: DATABASE_URL });
-
-  try {
-    console.log(`Connecting to database...`);
-    const client = await pool.connect();
-
-    try {
-      // Check if user already exists
-      const existing = await client.query(
-        "SELECT id, email, role FROM users WHERE email = $1",
-        [ADMIN_EMAIL]
-      );
-
-      if (existing.rows.length > 0) {
-        const user = existing.rows[0];
-        console.log(`User already exists: ${user.email} (role: ${user.role}, id: ${user.id})`);
-
-        // Update password if requested
-        const updatePassword = process.argv.includes("--update-password");
-        if (updatePassword) {
-          const hash = await bcrypt.hash(ADMIN_PASSWORD, 12);
-          await client.query(
-            "UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2",
-            [hash, user.id]
-          );
-          console.log("Password updated successfully.");
-        } else {
-          console.log("Use --update-password flag to update the password.");
-        }
-
-        return;
-      }
-
-      // Hash password with bcrypt (cost factor 12)
-      const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
-
-      // Insert admin user
-      const result = await client.query(
-        `INSERT INTO users (id, email, password_hash, role, created_at, updated_at)
-         VALUES ($1, $2, $3, 'admin', NOW(), NOW())
-         RETURNING id, email, role, created_at`,
-        [crypto.randomUUID(), ADMIN_EMAIL, passwordHash]
-      );
-
-      const user = result.rows[0];
-      console.log("");
-      console.log("Admin user created successfully:");
-      console.log(`  ID:      ${user.id}`);
-      console.log(`  Email:   ${user.email}`);
-      console.log(`  Role:    ${user.role}`);
-      console.log(`  Created: ${user.created_at}`);
-      console.log("");
-    } finally {
-      client.release();
-    }
-  } catch (err) {
-    console.error("Failed to create user:", err.message);
-    process.exit(1);
-  } finally {
-    await pool.end();
+if (existing) {
+  if (!updatePasswordOnly) {
+    console.log(`User already exists: ${username} (${existing.role})`);
+    console.log("Use --update-password to rotate the password for an existing account.");
+    process.exit(0);
   }
+
+  const updated = updateUser(username, { password, role });
+  console.log(JSON.stringify({ ok: true, action: "updated", user: updated }, null, 2));
+  process.exit(0);
 }
 
-createUser();
+const created = createUser(username, password, role);
+console.log(JSON.stringify({ ok: true, action: "created", user: created }, null, 2));

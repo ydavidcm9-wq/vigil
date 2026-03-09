@@ -443,7 +443,7 @@ module.exports = function (app, ctx) {
         status: output ? 'completed' : 'failed',
         duration: Date.now() - startTime,
         createdAt: new Date().toISOString(),
-        createdBy: req.user ? req.user.user : 'unknown',
+        createdBy: req.user ? req.user.username : 'unknown',
       };
 
       const runs = readJSON(RUNS_PATH, []);
