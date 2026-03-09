@@ -406,4 +406,154 @@ Assess: domain reputation, attack surface, potential risks, email security, host
       res.status(500).json({ error: 'AI analysis failed' });
     }
   });
+
+  // ══════════════════════════════════════════════════════════════════════
+  //  Web Recon — Scrapy-inspired crawling/reconnaissance
+  // ══════════════════════════════════════════════════════════════════════
+  const { WebRecon } = require('../lib/web-recon');
+  const RECON_PATH = path.join(DATA, 'recon-results.json');
+  const activeRecons = new Map();
+
+  // POST /api/osint/recon — start a web recon scan
+  app.post('/api/osint/recon', requireRole('analyst'), async (req, res) => {
+    const { target, spiderType, depth, maxPages, delay } = req.body;
+    if (!target || typeof target !== 'string') {
+      return res.status(400).json({ error: 'target URL required' });
+    }
+
+    // Validate URL
+    let targetUrl;
+    try {
+      targetUrl = new URL(target.startsWith('http') ? target : 'https://' + target);
+    } catch {
+      return res.status(400).json({ error: 'Invalid URL' });
+    }
+
+    const validTypes = ['surface', 'exposed', 'fingerprint'];
+    const type = validTypes.includes(spiderType) ? spiderType : 'surface';
+
+    const scanId = crypto.randomUUID();
+    const recon = new WebRecon({
+      depth: Math.min(depth || 2, 3),
+      maxPages: Math.min(maxPages || 30, 50),
+      delay: Math.max(delay || 500, 200),
+      respectRobots: true,
+      timeout: 10000,
+    });
+
+    activeRecons.set(scanId, { status: 'running', startedAt: new Date().toISOString() });
+
+    // Return immediately, run in background
+    res.json({ scanId, spiderType: type, target: targetUrl.href, status: 'running' });
+
+    // Execute in background
+    try {
+      // Emit progress via Socket.IO
+      if (ctx.io) {
+        recon.on('progress', (p) => {
+          ctx.io.emit('recon_progress', { scanId, ...p });
+        });
+      }
+
+      let result;
+      if (type === 'surface') result = await recon.surface(targetUrl.href);
+      else if (type === 'exposed') result = await recon.exposed(targetUrl.href);
+      else result = await recon.fingerprint(targetUrl.href);
+
+      result.id = scanId;
+      result.createdAt = new Date().toISOString();
+      result.createdBy = req.user ? req.user.user : 'unknown';
+
+      // Persist
+      const results = readJSON(RECON_PATH, []);
+      results.push(result);
+      if (results.length > 50) results.splice(0, results.length - 50);
+      writeJSON(RECON_PATH, results);
+
+      // Save to OSINT history
+      saveToHistory('recon-' + type, targetUrl.href,
+        `${type}: ${result.summary.pagesScanned} pages, ${result.summary.emailsFound} emails, ${result.summary.technologiesDetected} techs, ${result.summary.exposedPathsFound} exposed`);
+
+      activeRecons.set(scanId, { status: 'completed', result });
+
+      if (ctx.io) {
+        ctx.io.emit('recon_complete', { scanId, spiderType: type, target: targetUrl.href, summary: result.summary });
+      }
+
+      console.log(`  [WEB-RECON] ${type} scan ${scanId} completed: ${result.pagesScanned} pages in ${result.duration}ms`);
+    } catch (e) {
+      console.error(`  [WEB-RECON] Scan ${scanId} failed:`, e.message);
+      activeRecons.set(scanId, { status: 'failed', error: e.message });
+      if (ctx.io) ctx.io.emit('recon_complete', { scanId, status: 'failed', error: e.message });
+    }
+  });
+
+  // GET /api/osint/recon/:id — get recon results
+  app.get('/api/osint/recon/:id', requireAuth, (req, res) => {
+    // Check in-memory first (active/recent scans)
+    const active = activeRecons.get(req.params.id);
+    if (active) {
+      if (active.status === 'completed') return res.json(active.result);
+      if (active.status === 'failed') return res.status(500).json({ error: active.error });
+      return res.json({ status: 'running' });
+    }
+
+    // Check persisted results
+    const results = readJSON(RECON_PATH, []);
+    const result = results.find(r => r.id === req.params.id);
+    if (!result) return res.status(404).json({ error: 'Recon scan not found' });
+    res.json(result);
+  });
+
+  // GET /api/osint/recon — list recent recon results
+  app.get('/api/osint/recon', requireAuth, (req, res) => {
+    const results = readJSON(RECON_PATH, []);
+    // Return summary only (not full page data)
+    res.json(results.map(r => ({
+      id: r.id,
+      spiderType: r.spiderType,
+      target: r.target,
+      domain: r.domain,
+      duration: r.duration,
+      summary: r.summary,
+      createdAt: r.createdAt,
+    })).reverse());
+  });
+
+  // POST /api/osint/recon/:id/analyze — AI analysis of recon results
+  app.post('/api/osint/recon/:id/analyze', requireRole('analyst'), async (req, res) => {
+    if (!askAI) return res.status(503).json({ error: 'AI provider not configured' });
+
+    const results = readJSON(RECON_PATH, []);
+    const result = results.find(r => r.id === req.params.id);
+    if (!result) return res.status(404).json({ error: 'Recon scan not found' });
+
+    try {
+      const s = result.summary;
+      const prompt = `You are a senior penetration tester analyzing web reconnaissance results. Provide a security assessment.
+
+Target: ${result.target} (${result.domain})
+Spider Type: ${result.spiderType}
+Pages Scanned: ${s.pagesScanned}
+Emails Found: ${s.emailsFound}${result.emails.length ? ' (' + result.emails.slice(0, 5).join(', ') + ')' : ''}
+Technologies: ${result.technologies.join(', ') || 'none detected'}
+Forms: ${s.formsFound} (${s.loginForms} login forms, ${s.fileUploads} file uploads)
+Exposed Paths: ${s.exposedPathsFound} exposed, ${s.forbiddenPaths} forbidden
+Security Header Score: ${s.securityHeaderScore !== null ? s.securityHeaderScore + '%' : 'N/A'}
+${result.securityHeaders ? 'Missing Headers: ' + result.securityHeaders.missing.join(', ') : ''}
+${result.exposedPaths.length ? 'Exposed Files:\n' + result.exposedPaths.filter(p => p.exposed).map(p => `  ${p.path} (${p.risk}) — ${p.statusCode}, ${p.size}B`).join('\n') : ''}
+
+Provide:
+1. Risk Assessment (Critical/High/Medium/Low) with justification
+2. Key findings (top 5 security concerns)
+3. Attack surface analysis
+4. Recommendations (prioritized)
+Keep it professional and actionable. 8-12 sentences.`;
+
+      const analysis = await askAI(prompt, { timeout: 60000 });
+      res.json({ analysis: analysis || 'Analysis unavailable.', scanId: result.id });
+    } catch (e) {
+      res.status(500).json({ error: 'AI analysis failed: ' + e.message });
+    }
+  });
 };

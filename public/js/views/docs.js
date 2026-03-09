@@ -567,7 +567,17 @@ Views.docs = {
       '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">History Tab:</p>' +
       '<p>Last 100 lookups (domain + IP) with type, target, summary, and timestamp. Click any entry to re-run the investigation.</p>' +
 
-      '<p><strong>Q: Does OSINT make external API calls?</strong><br>A: Domain recon uses TLS connections (for SSL cert) and HTTP requests (for headers/technologies). IP lookup uses ip-api.com for geolocation. No paid APIs required.</p>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Web Recon Tab (Scrapy-inspired):</p>' +
+      '<p>Lightweight web crawler for security reconnaissance. Three spider types:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Surface Scan</strong> &mdash; Crawl pages up to configurable depth, extract links (internal/external), emails, forms (login/file upload detection), technology stack, and security headers. Respects robots.txt.</li>' +
+        '<li><strong>Exposed Files</strong> &mdash; Probe 50+ sensitive paths (.env, .git/config, backup.zip, wp-config.php, phpinfo.php, etc.) with risk assessment (critical/high/medium/low). Detects both exposed (200) and forbidden (403) paths.</li>' +
+        '<li><strong>Tech Fingerprint</strong> &mdash; Deep technology detection from HTTP headers (Server, X-Powered-By, CDN), HTML patterns (CMS, JS frameworks), and known paths (WordPress, Joomla, security.txt). Identifies 20+ technologies.</li>' +
+      '</ul>' +
+      '<p>Results include stat cards (pages scanned, emails found, technologies detected, exposed paths, header score), technology badges, security header analysis (present/missing), exposed path table with risk levels, form detection, and AI analysis button for a pentest-grade security assessment.</p>' +
+
+      '<p><strong>Q: Does OSINT make external API calls?</strong><br>A: Domain recon uses TLS connections (for SSL cert) and HTTP requests (for headers/technologies). IP lookup uses ip-api.com for geolocation. Web Recon crawls the target directly. No paid APIs required.</p>' +
+      '<p><strong>Q: What does Web Recon crawl?</strong><br>A: Only the target domain (internal links). External links are counted but not followed. Rate-limited to 500ms between requests by default. Respects robots.txt. Max 30 pages per scan.</p>' +
 
       /* Log Analysis */
       '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Log Analysis</h3>' +

@@ -13,6 +13,7 @@ Views.osint = {
         '<div class="tab-item active" data-tab="osint-domain">Domain Intel</div>' +
         '<div class="tab-item" data-tab="osint-ip">IP Lookup</div>' +
         '<div class="tab-item" data-tab="osint-history">History</div>' +
+        '<div class="tab-item" data-tab="osint-recon">Web Recon</div>' +
       '</div>' +
 
       // ── Domain Tab ──────────────────────────────────────────────────
@@ -59,6 +60,50 @@ Views.osint = {
             '<div class="empty-state"><div class="empty-state-icon">&#128339;</div><div class="empty-state-title">No History</div><div class="empty-state-desc">Investigations will appear here</div></div>' +
           '</div>' +
         '</div>' +
+      '</div>' +
+
+      // ── Web Recon Tab ──────────────────────────────────────────────
+      '<div class="tab-content" id="osint-recon">' +
+        '<div class="glass-card" style="margin-bottom:20px;">' +
+          '<div class="form-inline" style="flex-wrap:wrap;gap:12px;">' +
+            '<div class="form-group" style="flex:1;min-width:200px;">' +
+              '<label class="form-label">Target URL</label>' +
+              '<input type="text" class="form-input" id="recon-target" placeholder="https://example.com">' +
+            '</div>' +
+            '<div class="form-group" style="min-width:160px;">' +
+              '<label class="form-label">Spider Type</label>' +
+              '<select class="form-select" id="recon-type">' +
+                '<option value="surface">Surface Scan</option>' +
+                '<option value="exposed">Exposed Files</option>' +
+                '<option value="fingerprint">Tech Fingerprint</option>' +
+              '</select>' +
+            '</div>' +
+            '<div class="form-group" style="min-width:80px;">' +
+              '<label class="form-label">Depth</label>' +
+              '<select class="form-select" id="recon-depth">' +
+                '<option value="1">1</option>' +
+                '<option value="2" selected>2</option>' +
+                '<option value="3">3</option>' +
+              '</select>' +
+            '</div>' +
+            '<div class="form-group" style="align-self:flex-end;">' +
+              '<button class="btn btn-primary" id="recon-start-btn">Crawl</button>' +
+            '</div>' +
+          '</div>' +
+          '<div style="margin-top:8px;color:var(--text-tertiary);font-size:var(--font-size-xs);line-height:1.5;">' +
+            '<strong>Surface Scan</strong> — Crawl pages, extract links/emails/tech/forms/headers. ' +
+            '<strong>Exposed Files</strong> — Check 50+ sensitive paths (.env, .git, backups, configs). ' +
+            '<strong>Tech Fingerprint</strong> — Deep stack detection from headers, HTML patterns, known paths.' +
+          '</div>' +
+        '</div>' +
+        '<div id="recon-progress" style="display:none;margin-bottom:12px;" class="glass-card">' +
+          '<div style="display:flex;align-items:center;gap:8px;"><div class="spinner"></div><span id="recon-progress-text">Starting...</span></div>' +
+        '</div>' +
+        '<div id="recon-results"></div>' +
+        '<div class="glass-card" style="margin-top:16px;">' +
+          '<div class="glass-card-title" style="margin-bottom:12px;">Recent Scans</div>' +
+          '<div id="recon-history"><div class="loading-state"><div class="spinner"></div></div></div>' +
+        '</div>' +
       '</div>';
 
     var self = this;
@@ -81,10 +126,30 @@ Views.osint = {
     document.getElementById('osint-ip-input').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') self.lookupIP();
     });
+    document.getElementById('recon-start-btn').addEventListener('click', function() { self.startRecon(); });
+    document.getElementById('recon-target').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') self.startRecon();
+    });
+
+    // Socket.IO progress for recon
+    if (window.socket) {
+      window.socket.on('recon_progress', function(data) {
+        if (self._reconScanId && data.scanId === self._reconScanId) {
+          var el = document.getElementById('recon-progress-text');
+          if (el) el.textContent = data.phase + ': ' + (data.url || data.message || data.path || '');
+        }
+      });
+      window.socket.on('recon_complete', function(data) {
+        if (self._reconScanId && data.scanId === self._reconScanId) {
+          self.loadReconResult(data.scanId);
+        }
+      });
+    }
   },
 
   show: function() {
     this.loadHistory();
+    this.loadReconHistory();
   },
 
   hide: function() {},
@@ -442,5 +507,243 @@ Views.osint = {
       '<div class="detail-label">' + escapeHtml(label) + '</div>' +
       '<div class="detail-value">' + escapeHtml(value || '--') + '</div>' +
       '</div>';
+  },
+
+  // ══════════════════════════════════════════════════════════════════════
+  //  Web Recon (Scrapy-inspired)
+  // ══════════════════════════════════════════════════════════════════════
+  _reconScanId: null,
+
+  startRecon: function() {
+    var target = document.getElementById('recon-target').value.trim();
+    if (!target) { Toast.warning('Enter a target URL'); return; }
+
+    var type = document.getElementById('recon-type').value;
+    var depth = parseInt(document.getElementById('recon-depth').value) || 2;
+    var btn = document.getElementById('recon-start-btn');
+    var progress = document.getElementById('recon-progress');
+    var results = document.getElementById('recon-results');
+
+    btn.disabled = true;
+    btn.textContent = 'Crawling...';
+    progress.style.display = 'block';
+    document.getElementById('recon-progress-text').textContent = 'Starting ' + type + ' scan...';
+    results.innerHTML = '';
+
+    var self = this;
+    fetch('/api/osint/recon', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ target: target, spiderType: type, depth: depth, maxPages: 30, delay: 500 }),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) {
+        Toast.error(data.error);
+        btn.disabled = false;
+        btn.textContent = 'Crawl';
+        progress.style.display = 'none';
+        return;
+      }
+      self._reconScanId = data.scanId;
+      Toast.info('Recon started: ' + data.spiderType);
+
+      // Poll for results (in case Socket.IO event is missed)
+      self._pollRecon(data.scanId, btn, progress);
+    })
+    .catch(function(e) {
+      Toast.error('Failed to start: ' + e.message);
+      btn.disabled = false;
+      btn.textContent = 'Crawl';
+      progress.style.display = 'none';
+    });
+  },
+
+  _pollRecon: function(scanId, btn, progress) {
+    var self = this;
+    var attempts = 0;
+    var maxAttempts = 60; // 60 * 3s = 3 min max
+    var poll = setInterval(function() {
+      attempts++;
+      fetch('/api/osint/recon/' + scanId, { credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.status === 'running' && attempts < maxAttempts) return;
+          clearInterval(poll);
+          btn.disabled = false;
+          btn.textContent = 'Crawl';
+          progress.style.display = 'none';
+          if (data.error) { Toast.error(data.error); return; }
+          if (data.summary) {
+            Toast.success('Recon complete: ' + data.summary.pagesScanned + ' pages scanned');
+            self.renderReconResult(data);
+            self.loadReconHistory();
+          }
+        })
+        .catch(function() {
+          if (attempts >= maxAttempts) {
+            clearInterval(poll);
+            btn.disabled = false;
+            btn.textContent = 'Crawl';
+            progress.style.display = 'none';
+          }
+        });
+    }, 3000);
+  },
+
+  loadReconResult: function(scanId) {
+    var self = this;
+    fetch('/api/osint/recon/' + scanId, { credentials: 'same-origin' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.summary) {
+          var btn = document.getElementById('recon-start-btn');
+          var progress = document.getElementById('recon-progress');
+          btn.disabled = false;
+          btn.textContent = 'Crawl';
+          progress.style.display = 'none';
+          Toast.success('Recon complete');
+          self.renderReconResult(data);
+          self.loadReconHistory();
+        }
+      })
+      .catch(function() {});
+  },
+
+  renderReconResult: function(data) {
+    var container = document.getElementById('recon-results');
+    var s = data.summary || {};
+    var headerScore = s.securityHeaderScore !== null ? s.securityHeaderScore : '--';
+    var headerColor = headerScore >= 80 ? 'var(--cyan)' : headerScore >= 50 ? 'var(--purple)' : 'var(--orange)';
+
+    var html = '<div class="glass-card" style="margin-bottom:16px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+        '<div class="glass-card-title">Results: ' + escapeHtml(data.target || '') + '</div>' +
+        '<button class="btn btn-ghost btn-sm" id="recon-ai-btn" data-id="' + escapeHtml(data.id || '') + '" style="color:var(--cyan);">AI Analysis</button>' +
+      '</div>' +
+
+      '<div class="stat-grid" style="margin-bottom:16px;">' +
+        '<div class="stat-card"><div class="stat-card-label">Pages</div><div class="stat-card-value">' + (s.pagesScanned || 0) + '</div></div>' +
+        '<div class="stat-card"><div class="stat-card-label">Emails</div><div class="stat-card-value" style="color:' + (s.emailsFound ? 'var(--orange)' : 'var(--text-tertiary)') + ';">' + (s.emailsFound || 0) + '</div></div>' +
+        '<div class="stat-card"><div class="stat-card-label">Technologies</div><div class="stat-card-value" style="color:var(--cyan);">' + (s.technologiesDetected || 0) + '</div></div>' +
+        '<div class="stat-card"><div class="stat-card-label">Exposed Paths</div><div class="stat-card-value" style="color:' + (s.exposedPathsFound ? 'var(--orange)' : 'var(--cyan)') + ';">' + (s.exposedPathsFound || 0) + '</div></div>' +
+        '<div class="stat-card"><div class="stat-card-label">Header Score</div><div class="stat-card-value" style="color:' + headerColor + ';">' + headerScore + '%</div></div>' +
+        '<div class="stat-card"><div class="stat-card-label">Duration</div><div class="stat-card-value" style="font-size:var(--font-size-sm);">' + ((data.duration || 0) / 1000).toFixed(1) + 's</div></div>' +
+      '</div>';
+
+    // Technologies
+    if (data.technologies && data.technologies.length) {
+      html += '<div style="margin-bottom:12px;"><div style="font-weight:600;color:var(--text-primary);margin-bottom:6px;">Technologies Detected</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+      data.technologies.forEach(function(t) {
+        html += '<span class="badge" style="background:rgba(34,211,238,0.1);color:var(--cyan);border:1px solid rgba(34,211,238,0.2);padding:3px 10px;border-radius:12px;font-size:var(--font-size-xs);">' + escapeHtml(t) + '</span>';
+      });
+      html += '</div></div>';
+    }
+
+    // Emails
+    if (data.emails && data.emails.length) {
+      html += '<div style="margin-bottom:12px;"><div style="font-weight:600;color:var(--text-primary);margin-bottom:6px;">Emails Found</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+      data.emails.forEach(function(e) {
+        html += '<span style="color:var(--orange);font-family:var(--font-mono);font-size:var(--font-size-xs);">' + escapeHtml(e) + '</span>';
+      });
+      html += '</div></div>';
+    }
+
+    // Security Headers
+    if (data.securityHeaders) {
+      html += '<div style="margin-bottom:12px;"><div style="font-weight:600;color:var(--text-primary);margin-bottom:6px;">Security Headers (' + data.securityHeaders.score + '%)</div>';
+      if (data.securityHeaders.missing.length) {
+        html += '<div style="color:var(--orange);font-size:var(--font-size-xs);margin-bottom:4px;">Missing: ' + data.securityHeaders.missing.map(function(h) { return escapeHtml(h); }).join(', ') + '</div>';
+      }
+      if (data.securityHeaders.present.length) {
+        html += '<div style="color:var(--cyan);font-size:var(--font-size-xs);">Present: ' + data.securityHeaders.present.map(function(h) { return escapeHtml(h.header); }).join(', ') + '</div>';
+      }
+      html += '</div>';
+    }
+
+    // Exposed Paths
+    if (data.exposedPaths && data.exposedPaths.length) {
+      html += '<div style="margin-bottom:12px;"><div style="font-weight:600;color:var(--text-primary);margin-bottom:6px;">Exposed / Notable Paths</div>' +
+        '<table class="data-table"><thead><tr><th>Path</th><th>Status</th><th>Size</th><th>Risk</th></tr></thead><tbody>';
+      data.exposedPaths.forEach(function(p) {
+        var riskColor = p.risk === 'critical' ? 'var(--orange)' : p.risk === 'high' ? 'var(--orange)' : p.risk === 'medium' ? 'var(--purple)' : 'var(--text-tertiary)';
+        html += '<tr>' +
+          '<td style="font-family:var(--font-mono);font-size:var(--font-size-xs);">' + escapeHtml(p.path) + '</td>' +
+          '<td>' + (p.exposed ? '<span style="color:var(--orange);">' + p.statusCode + ' exposed</span>' : '<span style="color:var(--text-tertiary);">' + p.statusCode + '</span>') + '</td>' +
+          '<td style="color:var(--text-tertiary);">' + (p.size || '--') + 'B</td>' +
+          '<td style="color:' + riskColor + ';text-transform:uppercase;font-size:var(--font-size-xs);font-weight:600;">' + escapeHtml(p.risk || '') + '</td>' +
+          '</tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+
+    // Forms
+    if (data.forms && data.forms.length) {
+      html += '<div style="margin-bottom:12px;"><div style="font-weight:600;color:var(--text-primary);margin-bottom:6px;">Forms Found (' + data.forms.length + ')</div>' +
+        '<table class="data-table"><thead><tr><th>Page</th><th>Method</th><th>Inputs</th><th>Flags</th></tr></thead><tbody>';
+      data.forms.forEach(function(f) {
+        var flags = [];
+        if (f.hasPassword) flags.push('<span style="color:var(--orange);">Login</span>');
+        if (f.hasFile) flags.push('<span style="color:var(--orange);">File Upload</span>');
+        html += '<tr>' +
+          '<td style="font-size:var(--font-size-xs);max-width:200px;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(f.page || f.action || '') + '</td>' +
+          '<td>' + escapeHtml(f.method) + '</td>' +
+          '<td>' + f.inputCount + '</td>' +
+          '<td>' + (flags.join(', ') || '--') + '</td>' +
+          '</tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+
+    html += '<div id="recon-ai-result"></div></div>';
+    container.innerHTML = html;
+
+    // Bind AI analysis button
+    var aiBtn = document.getElementById('recon-ai-btn');
+    if (aiBtn) {
+      aiBtn.addEventListener('click', function() {
+        var id = aiBtn.getAttribute('data-id');
+        var resultEl = document.getElementById('recon-ai-result');
+        resultEl.innerHTML = '<div class="loading-state"><div class="spinner"></div><div>AI analyzing reconnaissance data...</div></div>';
+        fetch('/api/osint/recon/' + id + '/analyze', { method: 'POST', credentials: 'same-origin' })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.error) { resultEl.innerHTML = '<div style="color:var(--orange);">' + escapeHtml(d.error) + '</div>'; return; }
+            resultEl.innerHTML = '<div style="margin-top:12px;padding:12px;background:var(--well);border-radius:8px;border-left:3px solid var(--cyan);white-space:pre-wrap;font-size:var(--font-size-xs);line-height:1.7;color:var(--text-secondary);">' + escapeHtml(d.analysis) + '</div>';
+          })
+          .catch(function() { resultEl.innerHTML = '<div style="color:var(--orange);">AI analysis failed</div>'; });
+      });
+    }
+  },
+
+  loadReconHistory: function() {
+    var container = document.getElementById('recon-history');
+    if (!container) return;
+    fetch('/api/osint/recon', { credentials: 'same-origin' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (!data.length) {
+          container.innerHTML = '<div class="empty-state" style="padding:24px;"><div class="empty-state-icon">&#128375;</div><div class="empty-state-title">No Recon Scans</div><div class="empty-state-desc">Run a web recon scan to discover attack surface, exposed files, and technologies</div></div>';
+          return;
+        }
+        var html = '<table class="data-table"><thead><tr><th>Target</th><th>Type</th><th>Pages</th><th>Findings</th><th>Time</th></tr></thead><tbody>';
+        data.slice(0, 20).forEach(function(r) {
+          var s = r.summary || {};
+          var findings = (s.exposedPathsFound || 0) + (s.emailsFound || 0);
+          html += '<tr style="cursor:pointer;" onclick="Views.osint.loadReconResult(\'' + escapeHtml(r.id) + '\')">' +
+            '<td style="font-family:var(--font-mono);font-size:var(--font-size-xs);color:var(--cyan);">' + escapeHtml(r.domain || r.target || '') + '</td>' +
+            '<td>' + escapeHtml(r.spiderType || '') + '</td>' +
+            '<td>' + (s.pagesScanned || 0) + '</td>' +
+            '<td style="color:' + (findings ? 'var(--orange)' : 'var(--text-tertiary)') + ';">' + findings + '</td>' +
+            '<td style="color:var(--text-tertiary);font-size:var(--font-size-xs);">' + ((r.duration || 0) / 1000).toFixed(1) + 's</td>' +
+            '</tr>';
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+      })
+      .catch(function() { container.innerHTML = ''; });
   }
 };

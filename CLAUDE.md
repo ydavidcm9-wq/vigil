@@ -3,7 +3,7 @@
 ## Overview
 AI-powered security operations platform. Express.js + Socket.IO on port 4100.
 Vanilla JS frontend — no React, no build step, no bundler.
-~33 route modules | ~17 libs | 37 views | 200+ endpoints | 6 npm deps.
+~33 route modules | ~18 libs | 37 views | 200+ endpoints | 6 npm deps.
 License: AGPL-3.0
 
 ## Quick Start
@@ -111,6 +111,7 @@ notification-sender.js -> Push notifications via Socket.IO
 neural-cache.js        -> Intelligent caching layer
 code-audit.js          -> LLM-driven code vulnerability scanner (7 vuln types, confidence scoring)
 ephemeral-proxy.js     -> Disposable Codespace proxy management (SOCKS5 tunnels, lifecycle)
+web-recon.js           -> Scrapy-inspired web crawler (surface scan, exposed files, tech fingerprint)
 ```
 
 ### Frontend (ViewRegistry pattern)
@@ -361,6 +362,8 @@ Modal.close();
 | `scan_complete` | `{ scanId, type, results, summary }` | on scan finish |
 | `code_audit_progress` | `{ scanId, phase, message }` | during code audit |
 | `proxy_node_update` | `{ action, name, node? }` | on proxy node change |
+| `recon_progress` | `{ scanId, phase, url? }` | during web recon crawl |
+| `recon_complete` | `{ scanId, spiderType, target, summary }` | on recon finish |
 | `alert` | `{ id, severity, message, source, ts }` | on trigger |
 | `threat_update` | `{ threats: [] }` | 30s |
 | `posture_update` | `{ score, breakdown }` | 60s |
