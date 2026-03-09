@@ -446,6 +446,70 @@
     showView('dashboard');
   }
 
+  function show2FAPrompt(challengeToken, user, errorEl, btn) {
+    var form = document.getElementById('login-form');
+    // Replace form contents with 2FA input
+    form.innerHTML =
+      '<div style="text-align:center;margin-bottom:16px;">' +
+        '<div style="color:var(--text-secondary);font-size:14px;">Two-Factor Authentication</div>' +
+        '<div style="color:var(--text-tertiary);font-size:12px;margin-top:4px;">Enter the 6-digit code from your authenticator app</div>' +
+      '</div>' +
+      '<div class="login-field">' +
+        '<input type="text" id="login-2fa-code" placeholder="000000" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" inputmode="numeric" style="text-align:center;letter-spacing:8px;font-size:24px;" required>' +
+      '</div>' +
+      '<button type="submit" class="login-btn" id="login-2fa-btn">Verify</button>' +
+      '<div class="login-error" id="login-error"></div>' +
+      '<div style="text-align:center;margin-top:12px;">' +
+        '<a href="#" id="login-2fa-cancel" style="color:var(--text-tertiary);font-size:12px;">Back to login</a>' +
+      '</div>';
+
+    var codeInput = document.getElementById('login-2fa-code');
+    var newErrorEl = document.getElementById('login-error');
+    codeInput.focus();
+
+    document.getElementById('login-2fa-cancel').addEventListener('click', function(e) {
+      e.preventDefault();
+      // Reload the page to reset the login form
+      window.location.reload();
+    });
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var code = codeInput.value.trim();
+      if (!code) { newErrorEl.textContent = 'Enter your 2FA code'; return; }
+
+      var verifyBtn = document.getElementById('login-2fa-btn');
+      verifyBtn.disabled = true;
+      verifyBtn.textContent = 'Verifying...';
+      newErrorEl.textContent = '';
+
+      fetch('/api/auth/login/2fa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ challengeToken: challengeToken, code: code })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) {
+          State.user = data.user || { username: user };
+          showApp();
+        } else {
+          newErrorEl.textContent = data.error || 'Invalid 2FA code';
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = 'Verify';
+          codeInput.value = '';
+          codeInput.focus();
+        }
+      })
+      .catch(function() {
+        newErrorEl.textContent = 'Connection failed';
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = 'Verify';
+      });
+    });
+  }
+
   function initLoginForm() {
     var form = document.getElementById('login-form');
     if (!form) return;
@@ -476,35 +540,18 @@
         if (data.success) {
           State.user = data.user || { username: user };
           showApp();
-        } else if (data.requires2FA && data.challengeToken) {
-          var code = window.prompt('Enter your 2FA code');
-          if (!code) {
-            errorEl.textContent = '2FA code required';
-            return;
-          }
-          return fetch('/api/auth/login/2fa', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify({ challengeToken: data.challengeToken, code: code.trim() })
-          })
-          .then(function(r) { return r.json(); })
-          .then(function(twoFAData) {
-            if (twoFAData.success) {
-              State.user = twoFAData.user || { username: user };
-              showApp();
-            } else {
-              errorEl.textContent = twoFAData.error || twoFAData.message || 'Invalid 2FA code';
-            }
-          });
-        } else {
-          errorEl.textContent = data.error || data.message || 'Invalid credentials';
+          return;
         }
+        if (data.requires2FA && data.challengeToken) {
+          show2FAPrompt(data.challengeToken, user, errorEl, btn);
+          return;
+        }
+        errorEl.textContent = data.error || data.message || 'Invalid credentials';
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
       })
       .catch(function() {
         errorEl.textContent = 'Connection failed';
-      })
-      .finally(function() {
         btn.disabled = false;
         btn.textContent = 'Sign In';
       });

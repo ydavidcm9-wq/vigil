@@ -139,8 +139,8 @@ Views.settings = {
             })
             .then(function(r) { return r.json(); })
             .then(function(data) {
-              if (data.success) { Modal.close(); Toast.success('2FA enabled'); }
-              else Toast.error(data.message || '2FA verification failed');
+              if (data.success) { Modal.close(); Toast.success('2FA enabled'); Views.settings.load2FAStatus(); }
+              else Toast.error(data.error || data.message || '2FA verification failed');
             })
             .catch(function() { Toast.error('2FA setup failed'); });
           });
@@ -201,6 +201,8 @@ Views.settings = {
     if (State.user) {
       document.getElementById('settings-username').value = State.user.username || '';
     }
+    // Always load 2FA status on show
+    this.load2FAStatus();
   },
 
   hide: function() {},
@@ -208,6 +210,26 @@ Views.settings = {
   loadTabData: function() {
     if (this._activeTab === 'scanners') this.loadScanners();
     if (this._activeTab === 'about') this.loadAbout();
+  },
+
+  load2FAStatus: function() {
+    var statusEl = document.getElementById('settings-2fa-status');
+    var btnEl = document.getElementById('settings-2fa-btn');
+    if (!statusEl) return;
+    fetch('/api/auth/session', { credentials: 'same-origin' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.twoFactorEnabled) {
+          statusEl.innerHTML = '<span style="color:var(--cyan);">&#10003; 2FA is enabled</span>';
+          btnEl.textContent = 'Reconfigure 2FA';
+        } else {
+          statusEl.innerHTML = '<span style="color:var(--text-tertiary);">2FA is not enabled</span>';
+          btnEl.textContent = 'Setup 2FA';
+        }
+      })
+      .catch(function() {
+        statusEl.textContent = '2FA status unavailable';
+      });
   },
 
   loadScanners: function() {
