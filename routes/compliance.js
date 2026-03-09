@@ -97,9 +97,13 @@ module.exports = function (app, ctx) {
     switch (checkType) {
       case 'auth': {
         try {
-          const usersPath = path.join(__dirname, '..', 'users.json');
+          const usersPath = path.join(DATA, 'users.json');
           if (fs.existsSync(usersPath)) {
-            return { status: 'pass', detail: 'Authentication system configured' };
+            const users = readJSON(usersPath, []);
+            const hasAdmin = Array.isArray(users) && users.some(u => u.role === 'admin');
+            return hasAdmin
+              ? { status: 'pass', detail: `Authentication system configured — ${users.length} user(s), RBAC enabled` }
+              : { status: 'pass', detail: 'Authentication system configured' };
           }
         } catch {}
         return { status: 'partial', detail: 'Authentication system present but may need hardening' };
@@ -156,16 +160,16 @@ module.exports = function (app, ctx) {
 
       case 'threat_detection': {
         const threats = readJSON(path.join(DATA, 'threats.json'), []);
-        return threats.length >= 0
-          ? { status: 'pass', detail: 'Threat detection system active' }
-          : { status: 'partial', detail: 'Threat detection needs configuration' };
+        return threats.length > 0
+          ? { status: 'pass', detail: `Threat detection active — ${threats.length} threat(s) tracked` }
+          : { status: 'partial', detail: 'Threat detection system present but no threats tracked yet' };
       }
 
       case 'incident_response': {
         const incidents = readJSON(path.join(DATA, 'incidents.json'), []);
-        return incidents.length >= 0
-          ? { status: 'pass', detail: 'Incident management system in place' }
-          : { status: 'partial', detail: 'Incident response process needs documentation' };
+        return incidents.length > 0
+          ? { status: 'pass', detail: `Incident management active — ${incidents.length} incident(s) recorded` }
+          : { status: 'partial', detail: 'Incident response system present but no incidents recorded yet' };
       }
 
       case 'change_management': {
@@ -282,7 +286,10 @@ module.exports = function (app, ctx) {
   // POST /api/compliance/:framework/evidence — collect evidence for a control
   app.post('/api/compliance/:framework/evidence', requireRole('analyst'), async (req, res) => {
     try {
-      const { controlId, notes, artifacts } = req.body;
+      // Accept both controlId and control_id for frontend compatibility
+      const controlId = req.body.controlId || req.body.control_id;
+      const notes = req.body.notes || req.body.evidence || '';
+      const artifacts = req.body.artifacts || [];
       if (!controlId) return res.status(400).json({ error: 'controlId required' });
 
       const framework = FRAMEWORKS[req.params.framework];
@@ -308,49 +315,86 @@ module.exports = function (app, ctx) {
     }
   });
 
-  // POST /api/compliance/report — AI compliance report
-  app.post('/api/compliance/report', requireRole('analyst'), async (req, res) => {
-    try {
-      const { framework } = req.body;
-      const fwKey = framework || 'soc2';
-      const fw = FRAMEWORKS[fwKey];
-      if (!fw) return res.status(404).json({ error: 'Framework not found' });
+  // ── AI compliance report (shared logic) ──
+  async function generateComplianceReport(fwKey, res) {
+    const fw = FRAMEWORKS[fwKey];
+    if (!fw) return res.status(404).json({ error: 'Framework not found. Available: soc2, iso27001, nist800-53' });
 
-      // Evaluate all controls
-      const controlResults = [];
-      for (const control of fw.controls) {
-        const result = await evaluateCheck(control.check);
-        controlResults.push({ id: control.id, name: control.name, ...result });
-      }
+    if (!askAI) return res.status(503).json({ error: 'AI provider not configured. Set up an AI provider in Settings.' });
 
-      const passing = controlResults.filter(c => c.status === 'pass').length;
-      const failing = controlResults.filter(c => c.status === 'fail').length;
-      const partial = controlResults.filter(c => c.status === 'partial').length;
+    const controlResults = [];
+    for (const control of fw.controls) {
+      const result = await evaluateCheck(control.check);
+      controlResults.push({ id: control.id, name: control.name, category: control.category, description: control.description, ...result });
+    }
 
-      const prompt = `You are a compliance auditor. Generate a brief compliance assessment report.
+    const passing = controlResults.filter(c => c.status === 'pass').length;
+    const failing = controlResults.filter(c => c.status === 'fail').length;
+    const partial = controlResults.filter(c => c.status === 'partial').length;
+    const naCount = controlResults.filter(c => c.status === 'na').length;
+
+    const prompt = `You are a senior compliance auditor performing a ${fw.name} assessment. Generate a detailed compliance audit report.
 
 Framework: ${fw.name}
-Results: ${passing} passing, ${failing} failing, ${partial} partial out of ${controlResults.length} controls
+Description: ${fw.description}
+Results: ${passing} passing, ${failing} failing, ${partial} partial, ${naCount} not applicable out of ${controlResults.length} total controls
+Compliance Score: ${Math.round((passing / Math.max(passing + failing + partial, 1)) * 100)}%
 
-Control Details:
-${controlResults.map(c => `${c.id} ${c.name}: ${c.status} — ${c.detail}`).join('\n')}
+Control Assessment Details:
+${controlResults.map(c => `[${c.status.toUpperCase()}] ${c.id} — ${c.name}: ${c.detail}`).join('\n')}
 
-Write a compliance report with:
-1. Executive Summary (2-3 sentences)
-2. Key Findings (top 3-5 issues)
-3. Remediation Priority (what to fix first)
-4. Overall Compliance Readiness assessment
+Write a professional compliance audit report with these sections:
 
-Keep it professional and concise. No markdown formatting.`;
+EXECUTIVE SUMMARY
+- 3-4 sentences summarizing the overall compliance posture
+- Include the compliance score and what it means for certification readiness
 
-      const report = await askAI(prompt, { timeout: 30000 });
-      res.json({
-        framework: fwKey,
-        frameworkName: fw.name,
-        report: report || 'Report generation unavailable.',
-        summary: { passing, failing, partial, total: controlResults.length },
-        generatedAt: new Date().toISOString(),
-      });
+KEY FINDINGS
+- List the top 5 most critical findings (prioritize failures, then partial)
+- For each finding: control ID, issue description, business risk
+
+GAP ANALYSIS
+- What controls are meeting requirements
+- What controls have gaps
+- What controls need manual assessment (N/A items)
+
+REMEDIATION ROADMAP
+- Prioritized list of actions to improve compliance
+- Quick wins (can be fixed immediately)
+- Medium-term items (1-4 weeks)
+- Strategic improvements (ongoing)
+
+COMPLIANCE READINESS
+- Overall readiness assessment for certification/audit
+- Risk rating (Critical / High / Medium / Low)
+- Recommended next steps
+
+Keep it professional. Use plain text, no markdown formatting.`;
+
+    const report = await askAI(prompt, { timeout: 120000 });
+    res.json({
+      framework: fwKey,
+      frameworkName: fw.name,
+      report: report || 'Report generation unavailable — check AI provider configuration.',
+      controls: controlResults,
+      summary: { passing, failing, partial, na: naCount, total: controlResults.length },
+      generatedAt: new Date().toISOString(),
+    });
+  }
+
+  // POST /api/compliance/report — AI compliance report (body-based)
+  app.post('/api/compliance/report', requireRole('analyst'), async (req, res) => {
+    try {
+      await generateComplianceReport(req.body.framework || 'soc2', res);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // POST /api/compliance/:framework/report — AI compliance report (URL-based, matches frontend)
+  app.post('/api/compliance/:framework/report', requireRole('analyst'), async (req, res) => {
+    try {
+      await generateComplianceReport(req.params.framework, res);
     } catch (e) {
       res.status(500).json({ error: e.message });
     }

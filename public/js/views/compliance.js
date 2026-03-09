@@ -13,7 +13,7 @@ Views.compliance = {
       '<div class="tab-bar" id="compliance-tabs">' +
         '<div class="tab-item active" data-fw="soc2">SOC 2</div>' +
         '<div class="tab-item" data-fw="iso27001">ISO 27001</div>' +
-        '<div class="tab-item" data-fw="nist">NIST 800-53</div>' +
+        '<div class="tab-item" data-fw="nist800-53">NIST 800-53</div>' +
       '</div>' +
 
       '<div id="compliance-score-section" class="stat-grid" style="margin-bottom:20px;">' +
@@ -44,13 +44,32 @@ Views.compliance = {
     });
 
     document.getElementById('compliance-report-btn').addEventListener('click', function() {
-      Modal.loading('Generating compliance report...');
+      Modal.loading('Generating AI compliance report... (this may take 30-90 seconds)');
       fetch('/api/compliance/' + self._activeFramework + '/report', { method: 'POST', credentials: 'same-origin' })
         .then(function(r) { return r.json(); })
         .then(function(data) {
           Modal.close();
-          Toast.success('Report generated');
-          showView('reports');
+          if (data.error) { Toast.error(data.error); return; }
+          var s = data.summary || {};
+          var scoreVal = s.passing && s.total ? Math.round((s.passing / Math.max(s.passing + s.failing + s.partial, 1)) * 100) : 0;
+          var scoreColor = scoreVal >= 80 ? 'var(--cyan)' : scoreVal >= 50 ? 'var(--purple)' : 'var(--orange)';
+          Modal.open({
+            title: (data.frameworkName || 'Compliance') + ' — AI Audit Report',
+            size: 'lg',
+            body:
+              '<div style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap;">' +
+                '<div style="text-align:center;min-width:80px;"><div style="font-size:28px;font-weight:700;color:' + scoreColor + ';">' + scoreVal + '%</div><div style="font-size:var(--font-size-xs);color:var(--text-tertiary);">Score</div></div>' +
+                '<div style="text-align:center;min-width:60px;"><div style="font-size:28px;font-weight:700;color:var(--cyan);">' + (s.passing || 0) + '</div><div style="font-size:var(--font-size-xs);color:var(--text-tertiary);">Pass</div></div>' +
+                '<div style="text-align:center;min-width:60px;"><div style="font-size:28px;font-weight:700;color:var(--orange);">' + (s.failing || 0) + '</div><div style="font-size:var(--font-size-xs);color:var(--text-tertiary);">Fail</div></div>' +
+                '<div style="text-align:center;min-width:60px;"><div style="font-size:28px;font-weight:700;color:var(--purple);">' + (s.partial || 0) + '</div><div style="font-size:var(--font-size-xs);color:var(--text-tertiary);">Partial</div></div>' +
+                '<div style="text-align:center;min-width:60px;"><div style="font-size:28px;font-weight:700;color:var(--text-tertiary);">' + (s.na || 0) + '</div><div style="font-size:var(--font-size-xs);color:var(--text-tertiary);">N/A</div></div>' +
+              '</div>' +
+              '<div style="background:var(--well);border-radius:8px;padding:16px;max-height:50vh;overflow-y:auto;white-space:pre-wrap;font-family:var(--font-mono);font-size:var(--font-size-xs);line-height:1.7;color:var(--text-secondary);">' +
+                escapeHtml(data.report || 'No report content.') +
+              '</div>' +
+              '<div style="margin-top:8px;color:var(--text-tertiary);font-size:var(--font-size-xs);">Generated: ' + (data.generatedAt || '--') + '</div>',
+            footer: '<button class="btn btn-ghost btn-sm" onclick="Modal.close()">Close</button>'
+          });
         })
         .catch(function() { Modal.close(); Toast.error('Report generation failed'); });
     });
@@ -73,16 +92,17 @@ Views.compliance = {
         var controls = data.controls || data || [];
         if (!Array.isArray(controls)) controls = [];
 
-        var passed = 0, failed = 0, partial = 0;
+        var passed = 0, failed = 0, partial = 0, naCount = 0;
         controls.forEach(function(c) {
           var s = (c.status || '').toLowerCase();
           if (s === 'pass' || s === 'passed') passed++;
           else if (s === 'fail' || s === 'failed') failed++;
+          else if (s === 'na' || s === 'not_applicable') naCount++;
           else partial++;
         });
 
-        var total = controls.length || 1;
-        var score = Math.round((passed / total) * 100);
+        var scoreable = passed + failed + partial;
+        var score = scoreable > 0 ? Math.round((passed / scoreable) * 100) : 0;
         document.getElementById('compliance-score-value').textContent = score + '%';
         document.getElementById('compliance-score-value').style.color = score >= 80 ? 'var(--cyan)' : score >= 50 ? 'var(--purple)' : 'var(--orange)';
         document.getElementById('compliance-passed').textContent = passed;
@@ -94,17 +114,20 @@ Views.compliance = {
           return;
         }
 
-        var html = '<table class="data-table"><thead><tr><th>ID</th><th>Control</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+        var html = '<table class="data-table"><thead><tr><th>ID</th><th>Control</th><th>Detail</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
         controls.forEach(function(c) {
           var status = (c.status || 'partial').toLowerCase();
           var statusBadge = status === 'pass' || status === 'passed' ? 'badge-success' :
-                           status === 'fail' || status === 'failed' ? 'badge-critical' : 'badge-medium';
+                           status === 'fail' || status === 'failed' ? 'badge-critical' :
+                           status === 'na' ? 'badge-info' : 'badge-medium';
           var statusLabel = status === 'pass' || status === 'passed' ? 'Pass' :
-                           status === 'fail' || status === 'failed' ? 'Fail' : 'Partial';
+                           status === 'fail' || status === 'failed' ? 'Fail' :
+                           status === 'na' ? 'N/A' : 'Partial';
 
           html += '<tr>' +
-            '<td style="color:var(--text-primary);font-weight:500;">' + escapeHtml(c.id || c.control_id || '--') + '</td>' +
-            '<td>' + escapeHtml(c.title || c.name || c.description || '--') + '</td>' +
+            '<td style="color:var(--text-primary);font-weight:500;white-space:nowrap;">' + escapeHtml(c.id || c.control_id || '--') + '</td>' +
+            '<td>' + escapeHtml(c.title || c.name || '--') + '</td>' +
+            '<td style="color:var(--text-tertiary);font-size:var(--font-size-xs);">' + escapeHtml(c.detail || c.description || '--') + '</td>' +
             '<td><span class="badge ' + statusBadge + '">' + statusLabel + '</span></td>' +
             '<td><button class="btn btn-ghost btn-sm compliance-evidence-btn" data-id="' + escapeHtml(c.id || c.control_id || '') + '">Evidence</button></td>' +
             '</tr>';

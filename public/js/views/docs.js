@@ -467,21 +467,31 @@ Views.docs = {
       '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/complainace_framework.png" alt="Vigil Compliance Frameworks" style="width:100%;display:block;" loading="lazy"></div>' +
 
       '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Supported Frameworks:</p>' +
-      '<table class="data-table"><thead><tr><th>Framework</th><th>Controls</th><th>Focus</th></tr></thead><tbody>' +
-        '<tr><td style="color:var(--text-primary);">SOC 2 Type II</td><td>CC1-CC9, A1, PI1, C1, P1</td><td>Security, availability, processing integrity, confidentiality, privacy</td></tr>' +
-        '<tr><td style="color:var(--text-primary);">ISO 27001</td><td>A.5-A.18</td><td>Information security management system (ISMS)</td></tr>' +
-        '<tr><td style="color:var(--text-primary);">NIST 800-53</td><td>AC, AU, CM, IA, IR, SC</td><td>Federal information systems security controls</td></tr>' +
+      '<table class="data-table"><thead><tr><th>Framework</th><th>Controls</th><th>Automated Checks</th></tr></thead><tbody>' +
+        '<tr><td style="color:var(--text-primary);">SOC 2 Type II</td><td>14 (CC1&ndash;CC9)</td><td>Auth, access control, firewall, encryption, logging, monitoring, scanning, threat detection, incident response, change mgmt</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">ISO 27001:2022</td><td>15 (A.5&ndash;A.8)</td><td>Same as SOC 2 plus malware detection, secure coding, physical/endpoint (manual)</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">NIST 800-53 Rev. 5</td><td>15 (AC,AT,AU,CA,CM,IA,IR,RA,SC,SI)</td><td>Account management, access enforcement, event logging, audit review, security assessments, baseline config, authenticator mgmt, incident handling, vulnerability monitoring, boundary protection, flaw remediation</td></tr>' +
       '</tbody></table>' +
 
       '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">What you see:</p>' +
       '<ul style="padding-left:20px;list-style:disc;">' +
-        '<li><strong>Framework Tabs</strong> &mdash; SOC 2, ISO 27001, NIST 800-53. Click to switch.</li>' +
-        '<li><strong>Stats Cards</strong> &mdash; Overall Compliance %, Passed controls, Failed controls, Partial controls.</li>' +
-        '<li><strong>Controls Table</strong> &mdash; ID (e.g., CC1.1), Control name (e.g., "Control Environment"), Status badge (Passed=cyan, Failed=orange, Partial=purple), Evidence button.</li>' +
+        '<li><strong>Framework Tabs</strong> &mdash; SOC 2, ISO 27001, NIST 800-53. Click to switch between frameworks.</li>' +
+        '<li><strong>Stats Cards</strong> &mdash; Overall Compliance % (excludes N/A controls), Pass count (cyan), Fail count (orange), Partial count.</li>' +
+        '<li><strong>Controls Table</strong> &mdash; ID, Control name, Check detail (what was tested), Status badge (Pass=cyan, Fail=orange, Partial=purple, N/A=info), Evidence button.</li>' +
+        '<li><strong>Generate Report</strong> &mdash; AI-powered full audit report shown in a modal with executive summary, key findings, gap analysis, remediation roadmap, and compliance readiness.</li>' +
       '</ul>' +
 
-      '<p><strong>Q: What does "Partial" mean?</strong><br>A: The control is partially implemented. Some checks pass but others fail. Click Evidence to see what\'s missing.</p>' +
-      '<p><strong>Q: How does Generate Report work?</strong><br>A: Click the button to produce a compliance readiness report covering all controls, current status, gaps, and remediation priorities.</p>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">How It Works:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li>Controls are evaluated automatically: auth checks users.json, scanning checks completed scans, logging checks audit trail, firewall checks ufw, etc.</li>' +
+        '<li>N/A controls (organization, physical, endpoint) require manual assessment and evidence collection.</li>' +
+        '<li>Click <strong>Evidence</strong> on any control to attach notes or documentation.</li>' +
+        '<li>AI reports use your configured AI provider (Settings &gt; AI Provider) to analyze all control results and generate professional audit reports.</li>' +
+      '</ul>' +
+
+      '<p><strong>Q: What does "Partial" mean?</strong><br>A: The control is partially implemented. The automated check found some evidence but full compliance requires additional configuration. Click Evidence to document what\'s in place.</p>' +
+      '<p><strong>Q: Why is my score low?</strong><br>A: Score = Pass / (Pass+Fail+Partial) &times; 100. N/A controls are excluded. Run scans, create incidents, configure firewall, and enable TLS to improve scores.</p>' +
+      '<p><strong>Q: How does Generate Report work?</strong><br>A: Click the button to invoke AI analysis of all controls in the active framework. A detailed report appears in a modal with scoring, gap analysis, remediation priorities, and certification readiness assessment. Takes 30-90 seconds depending on AI provider.</p>' +
 
       /* Reports */
       '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Reports</h3>' +
@@ -793,7 +803,7 @@ Views.docs = {
       '<div class="code-block" style="margin-bottom:8px;">GET  /api/incidents           List incidents\nPOST /api/incidents           { title, severity, description, type }\nPATCH /api/incidents/:id      { status, severity, assignee }\nPOST /api/incidents/:id/respond  AI playbook generation (30s)\nPOST /api/incidents/:id/timeline  { event, detail }\nGET  /api/playbooks           Playbook templates\nPOST /api/playbooks/generate  { description }  AI generation</div>' +
 
       '<h3 style="color:var(--cyan);margin:16px 0 8px;">Compliance &amp; Reports</h3>' +
-      '<div class="code-block" style="margin-bottom:8px;">GET  /api/compliance/:framework  Framework status (soc2|iso27001|nist800-53)\nPOST /api/reports/generate      { type }  AI report generation</div>' +
+      '<div class="code-block" style="margin-bottom:8px;">GET  /api/compliance              All frameworks summary (scores, pass/fail/partial)\nGET  /api/compliance/:framework   Framework details + controls (soc2|iso27001|nist800-53)\nPOST /api/compliance/:framework/report  AI compliance audit report\nPOST /api/compliance/:framework/evidence  { controlId, notes }  Attach evidence\nPOST /api/reports/generate       { type }  AI report generation</div>' +
 
       '<h3 style="color:var(--cyan);margin:16px 0 8px;">Log Analysis</h3>' +
       '<div class="code-block" style="margin-bottom:8px;">POST /api/logs/query         { query, source }  NL log search + AI analysis\nGET  /api/logs/sources        Available log sources</div>' +
