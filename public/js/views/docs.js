@@ -387,7 +387,7 @@ Views.docs = {
 
       /* Proxy Nodes */
       '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Proxy Nodes (Ephemeral Infrastructure)</h3>' +
-      '<p>Disposable scanning infrastructure using GitHub Codespaces. Each node provides a unique exit IP via SOCKS5 proxy, enabling anonymous scanning during authorized penetration tests. Inspired by fluffy-barnacle.</p>' +
+      '<p>Disposable scanning infrastructure using GitHub Codespaces. Each node provides a unique exit IP via SOCKS5 proxy, enabling anonymous scanning during authorized penetration tests. Includes Proxy Pool &amp; Config Export for 6 tool formats, SSH Tunnels (forward/reverse/dynamic), OOB Callback Listener with Payload Hosting and 12 SSRF presets. Inspired by fluffy-barnacle + pgrok.</p>' +
       '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">How it works:</p>' +
       '<ol style="padding-left:20px;">' +
         '<li><strong>Create Node</strong> &mdash; Provisions a disposable GitHub Codespace (from <code style="background:var(--well);padding:1px 4px;border-radius:3px;">github/codespaces-blank</code>)</li>' +
@@ -408,6 +408,8 @@ Views.docs = {
       '<p><strong>Q: Is this free?</strong><br>A: GitHub free accounts include 120 core-hours/month of Codespaces. A basic node (2-core) costs 2 core-hours per hour. That gives ~60 hours of proxy time per month at no cost.</p>' +
       '<p><strong>Q: Do I need gh CLI in the Docker container?</strong><br>A: Yes. The Vigil Docker image includes gh CLI pre-installed. You just need to authenticate it once: <code style="background:var(--well);padding:1px 4px;border-radius:3px;">docker exec -it vigil gh auth login</code>. Or mount your host config: <code style="background:var(--well);padding:1px 4px;border-radius:3px;">~/.config/gh:/home/vigil/.config/gh:ro</code> in docker-compose.yml volumes.</p>' +
       '<p><strong>Q: What if gh CLI is not installed?</strong><br>A: The Proxy Nodes view shows a Prerequisites panel with setup instructions. All other Vigil features work normally without gh.</p>' +
+      '<p><strong>Q: What is the Proxy Pool?</strong><br>A: The Proxy Pool tracks all active SOCKS5 tunnels and generates ready-to-paste configurations for 6 tools: proxychains, curl, ENV vars, Burp Suite, nmap, and nuclei. Click any format button to generate and copy the config.</p>' +
+      '<p><strong>Q: What is Payload Hosting?</strong><br>A: You can host files or SSRF redirect payloads on the callback listener HTTP server. Use redirect payloads for SSRF testing (auto-redirects to internal metadata endpoints) or file payloads for XSS/XXE hosting. 12 one-click SSRF presets are available for common cloud metadata endpoints (AWS, GCP, Azure, K8s, Docker, Consul).</p>' +
 
       /* SSH Tunnels */
       '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">SSH Tunnels (pgrok-inspired)</h3>' +
@@ -907,7 +909,7 @@ Views.docs = {
 
       '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">5 Zones:</p>' +
       '<ol style="padding-left:20px;list-style:decimal;">' +
-        '<li style="margin-bottom:6px;"><strong>Stats Bar</strong> &mdash; Tools (35), Resources (7), Prompts (8), MCP Calls counter.</li>' +
+        '<li style="margin-bottom:6px;"><strong>Stats Bar</strong> &mdash; Tools (37), Resources (7), Prompts (8), MCP Calls counter.</li>' +
         '<li style="margin-bottom:6px;"><strong>AI Security Workflows</strong> &mdash; 4 clickable prompt cards: Security Audit (Multi-Tool), Threat Briefing (Daily), Incident Response (Interactive), Compliance Report (SOC2/ISO/NIST). Click to run the workflow with optional parameters. 4 additional prompts available via tool explorer: Code Security Review, WAF Reconnaissance, Anonymous Pentest Setup, AI Security Review.</li>' +
         '<li style="margin-bottom:6px;"><strong>Live Security Data</strong> &mdash; 3 MCP resource cards showing real-time data: Security Posture (score + grade from vigil://posture), Active Threats (count + critical badge + top 3 threats from vigil://threats), Open Findings (count + severity breakdown from vigil://findings). 4 additional resources: vigil://code-audit-findings, vigil://waf-signatures, vigil://proxy-nodes, vigil://ai-security-kb.</li>' +
         '<li style="margin-bottom:6px;"><strong>Tool Explorer</strong> &mdash; Two-panel layout. Left: search bar + 12 category tabs (All/Scanning/Intelligence/Compliance/Incident/System/Code Audit/Proxy/Adversarial/Pentest/Purple Team/AI Security) + tool list. Right: selected tool with description, auto-generated parameter form, Execute button, smart result rendering.</li>' +
