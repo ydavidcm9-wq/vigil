@@ -24,6 +24,15 @@ function writeJSON(p, data) {
 module.exports = function (app, ctx) {
   const { requireAuth, requireRole, askAI, osintEngine } = ctx;
 
+  // Helper: get API keys from credential vault (if available)
+  function getApiKey(name) {
+    try {
+      const vault = require('../lib/credential-vault');
+      const cred = vault.getCredential(name);
+      return cred ? cred.value : null;
+    } catch { return null; }
+  }
+
   function saveToHistory(type, target, summary) {
     const history = readJSON(HISTORY_PATH, []);
     history.push({
@@ -201,6 +210,26 @@ module.exports = function (app, ctx) {
         if (!secHeaders['referrer-policy']) missingHeaders.push('Referrer-Policy');
       }
 
+      // ── WebOSINT-inspired enrichments (parallel) ────────────────────
+      // Resolve domain IP for reverse IP lookup
+      let domainIP = null;
+      const aRecords = dnsRecords.A || [];
+      if (aRecords.length > 0) domainIP = aRecords[0];
+
+      const whoisxmlKey = getApiKey('whoisxml_api_key');
+      const whoisfreaksKey = getApiKey('whoisfreaks_api_key');
+      const hackertargetKey = getApiKey('hackertarget_api_key');
+
+      const [reverseIPResult, reputationResult, whoisHistoryResult] = await Promise.allSettled([
+        domainIP && osintEngine ? osintEngine.reverseIPLookup(domainIP, hackertargetKey) : Promise.resolve(null),
+        osintEngine ? osintEngine.domainReputation(domain, whoisxmlKey) : Promise.resolve(null),
+        osintEngine ? osintEngine.whoisHistory(domain, whoisfreaksKey) : Promise.resolve(null),
+      ]);
+
+      const reverseIP = reverseIPResult.status === 'fulfilled' ? reverseIPResult.value : null;
+      const reputation = reputationResult.status === 'fulfilled' ? reputationResult.value : null;
+      const whoisHist = whoisHistoryResult.status === 'fulfilled' ? whoisHistoryResult.value : null;
+
       // Build the response
       const result = {
         domain,
@@ -234,6 +263,10 @@ module.exports = function (app, ctx) {
           protocol: ssl.protocol,
           san_count: ssl.san ? ssl.san.length : 0,
         } : null,
+        // WebOSINT enrichments
+        reverseIP: reverseIP || null,
+        reputation: reputation || null,
+        whoisHistory: whoisHist || null,
       };
 
       // AI assessment (runs after data is ready, non-blocking for response)
@@ -249,6 +282,9 @@ SSL: ${ssl ? ssl.issuer + ', ' + ssl.protocol + ', valid until ' + ssl.valid_to 
 Tech: ${technologies.join(', ') || 'None detected'}
 Missing security headers: ${missingHeaders.join(', ') || 'None — all present'}
 Cert transparency entries: ${ctCerts.length}
+${reverseIP && reverseIP.count ? 'Shared hosting: ' + reverseIP.count + ' domains on same IP (' + reverseIP.domains.slice(0, 5).join(', ') + ')' : ''}
+${reputation && reputation.score != null ? 'Domain reputation score: ' + reputation.score + '/100 (' + (reputation.testsPassed || 0) + ' tests passed, ' + (reputation.testsFailed || 0) + ' failed)' : ''}
+${whoisHist && whoisHist.count ? 'WHOIS history: ' + whoisHist.count + ' historical records' : ''}
 
 Assess: attack surface, exposure, security posture, notable risks. Be specific and actionable.`;
           aiAnalysis = await askAI(prompt, { timeout: 20000 });
@@ -277,11 +313,21 @@ Assess: attack surface, exposure, security posture, notable risks. Be specific a
         return res.status(400).json({ error: 'Invalid IP format' });
       }
 
-      // Use osint-engine for core lookup
-      const engineResult = osintEngine ? await osintEngine.ipLookup(ip) : {};
+      // Use osint-engine for core lookup + enhanced dual-source geo + reverse IP
+      const hackertargetKey = getApiKey('hackertarget_api_key');
 
-      const geo = engineResult.geolocation || {};
-      const reverseDNS = engineResult.reverseDNS || [];
+      const [engineResult, enhancedGeoResult, reverseIPResult] = await Promise.allSettled([
+        osintEngine ? osintEngine.ipLookup(ip) : Promise.resolve({}),
+        osintEngine ? osintEngine.ipLookupEnhanced(ip) : Promise.resolve(null),
+        osintEngine ? osintEngine.reverseIPLookup(ip, hackertargetKey) : Promise.resolve(null),
+      ]);
+
+      const engineData = engineResult.status === 'fulfilled' ? engineResult.value : {};
+      const enhancedGeo = enhancedGeoResult.status === 'fulfilled' ? enhancedGeoResult.value : null;
+      const reverseIP = reverseIPResult.status === 'fulfilled' ? reverseIPResult.value : null;
+
+      const geo = engineData.geolocation || {};
+      const reverseDNS = engineData.reverseDNS || [];
 
       // Quick port check via native Node.js (no nmap needed)
       const openPorts = [];
@@ -319,20 +365,25 @@ Assess: attack surface, exposure, security posture, notable risks. Be specific a
         asn: geo.as || null,
         asName: geo.asName || null,
         openPorts,
+        // WebOSINT enrichments
+        reverseIP: reverseIP || null,
+        enhancedGeo: enhancedGeo || null,
       };
 
       // AI assessment
       let aiAnalysis = null;
       if (askAI) {
         try {
-          const prompt = `Assess this IP address as a security analyst (3-4 sentences):
+          const prompt = `Assess this IP address as a security analyst (4-6 sentences):
 IP: ${ip}
 Location: ${geo.city || '?'}, ${geo.region || '?'}, ${geo.country || '?'}
 ISP: ${geo.isp || '?'} | Org: ${geo.org || '?'} | ASN: ${geo.as || '?'}
 Reverse DNS: ${result.reverse_dns || 'none'}
 Open ports: ${openPorts.map(p => p.port).join(', ') || 'none detected'}
+${reverseIP && reverseIP.count ? 'Shared hosting: ' + reverseIP.count + ' domains on this IP (' + reverseIP.domains.slice(0, 5).join(', ') + ')' : ''}
+${enhancedGeo && enhancedGeo.verified != null ? 'Geo verification: ' + (enhancedGeo.verified ? 'confirmed' : 'MISMATCH') + ' (2 sources)' : ''}
 
-Assess: Is this a hosting provider, residential, corporate? Any notable risks from open ports? Reputation concerns?`;
+Assess: Is this a hosting provider, residential, corporate? Shared hosting implications? Any notable risks from open ports? Reputation concerns?`;
           aiAnalysis = await askAI(prompt, { timeout: 15000 });
         } catch { /* AI optional */ }
       }

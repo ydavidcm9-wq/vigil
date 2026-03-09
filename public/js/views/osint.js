@@ -32,7 +32,7 @@ Views.osint = {
           '</div>' +
         '</div>' +
         '<div id="osint-domain-results">' +
-          '<div class="empty-state"><div class="empty-state-icon">&#128065;</div><div class="empty-state-title">Domain Intelligence</div><div class="empty-state-desc">Enter a domain to gather WHOIS, DNS, SSL, subdomains, certificates, and AI security assessment</div></div>' +
+          '<div class="empty-state"><div class="empty-state-icon">&#128065;</div><div class="empty-state-title">Domain Intelligence</div><div class="empty-state-desc">Enter a domain to gather WHOIS, DNS, SSL, subdomains, certificates, reverse IP, domain reputation, WHOIS history, and AI security assessment</div></div>' +
         '</div>' +
       '</div>' +
 
@@ -50,7 +50,7 @@ Views.osint = {
           '</div>' +
         '</div>' +
         '<div id="osint-ip-results">' +
-          '<div class="empty-state"><div class="empty-state-icon">&#128065;</div><div class="empty-state-title">IP Intelligence</div><div class="empty-state-desc">Enter an IP address for geolocation, reverse DNS, port scan, and AI assessment</div></div>' +
+          '<div class="empty-state"><div class="empty-state-icon">&#128065;</div><div class="empty-state-title">IP Intelligence</div><div class="empty-state-desc">Enter an IP address for dual-source geolocation, reverse DNS, reverse IP, port scan, and AI assessment</div></div>' +
         '</div>' +
       '</div>' +
 
@@ -223,7 +223,7 @@ Views.osint = {
     var results = document.getElementById('osint-domain-results');
     btn.disabled = true;
     btn.textContent = 'Investigating...';
-    results.innerHTML = '<div class="loading-state"><div class="spinner spinner-lg"></div><div>Gathering intelligence on ' + escapeHtml(domain) + '...<br><span style="color:var(--text-tertiary);font-size:var(--font-size-xs);">DNS, WHOIS, SSL, subdomains, cert transparency, HTTP headers, AI analysis</span></div></div>';
+    results.innerHTML = '<div class="loading-state"><div class="spinner spinner-lg"></div><div>Gathering intelligence on ' + escapeHtml(domain) + '...<br><span style="color:var(--text-tertiary);font-size:var(--font-size-xs);">DNS, WHOIS, SSL, subdomains, cert transparency, reverse IP, reputation, WHOIS history, AI analysis</span></div></div>';
 
     fetch('/api/osint/domain', {
       method: 'POST',
@@ -250,6 +250,10 @@ Views.osint = {
       }
 
       // ── Stat cards ────────────────────────────────────────────────
+      var repScore = data.reputation && data.reputation.score != null ? data.reputation.score : null;
+      var repColor = repScore != null ? (repScore >= 70 ? 'var(--cyan)' : repScore >= 40 ? 'var(--text-secondary)' : 'var(--orange)') : 'var(--text-tertiary)';
+      var sharedHosts = data.reverseIP && data.reverseIP.count ? data.reverseIP.count : 0;
+
       html += '<div class="stat-grid" style="margin-bottom:16px;">' +
         '<div class="stat-card">' +
           '<div class="stat-card-label">Subdomains</div>' +
@@ -266,6 +270,14 @@ Views.osint = {
         '<div class="stat-card">' +
           '<div class="stat-card-label">Missing Headers</div>' +
           '<div class="stat-card-value" style="color:' + ((data.httpInfo && data.httpInfo.missingHeaders && data.httpInfo.missingHeaders.length > 0) ? 'var(--orange)' : 'var(--cyan)') + ';">' + (data.httpInfo && data.httpInfo.missingHeaders ? data.httpInfo.missingHeaders.length : '--') + '</div>' +
+        '</div>' +
+        '<div class="stat-card">' +
+          '<div class="stat-card-label">Reputation</div>' +
+          '<div class="stat-card-value" style="color:' + repColor + ';">' + (repScore != null ? repScore + '/100' : '--') + '</div>' +
+        '</div>' +
+        '<div class="stat-card">' +
+          '<div class="stat-card-label">Shared Hosts</div>' +
+          '<div class="stat-card-value" style="color:' + (sharedHosts > 10 ? 'var(--orange)' : sharedHosts > 0 ? 'var(--cyan)' : 'var(--text-tertiary)') + ';">' + (sharedHosts || '--') + '</div>' +
         '</div>' +
       '</div>';
 
@@ -394,6 +406,82 @@ Views.osint = {
         html += '</div>';
       }
 
+      // ── Reverse IP (WebOSINT) ─────────────────────────────────────
+      var revIP = data.reverseIP;
+      if (revIP && revIP.count > 0) {
+        html += '<div class="glass-card" style="margin-bottom:16px;">' +
+          '<div class="glass-card-title" style="margin-bottom:8px;">Reverse IP — Shared Hosting (' + revIP.count + ' domains)</div>' +
+          '<div style="color:var(--text-tertiary);font-size:var(--font-size-xs);margin-bottom:8px;">Domains hosted on the same IP address (' + escapeHtml(revIP.ip || '') + ') — via HackerTarget</div>' +
+          '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+        revIP.domains.slice(0, 50).forEach(function(d) {
+          var isSelf = d.toLowerCase() === (data.domain || '').toLowerCase();
+          html += '<span class="tag' + (isSelf ? ' tag-cyan' : '') + '" style="font-size:11px;' + (isSelf ? 'font-weight:600;' : '') + '">' + escapeHtml(d) + '</span>';
+        });
+        if (revIP.count > 50) html += '<span class="tag" style="color:var(--text-tertiary);">+' + (revIP.count - 50) + ' more</span>';
+        html += '</div></div>';
+      } else if (revIP && revIP.rateLimited) {
+        html += '<div class="glass-card" style="margin-bottom:16px;">' +
+          '<div class="glass-card-title" style="margin-bottom:8px;">Reverse IP</div>' +
+          '<div style="color:var(--text-tertiary);font-size:var(--font-size-sm);">HackerTarget free API rate limit exceeded — add API key in Settings > Credentials (hackertarget_api_key)</div>' +
+          '</div>';
+      }
+
+      // ── Domain Reputation (WebOSINT) ────────────────────────────────
+      var rep = data.reputation;
+      if (rep && rep.score != null) {
+        var repGrade = rep.score >= 80 ? 'Good' : rep.score >= 60 ? 'Fair' : rep.score >= 40 ? 'Low' : 'Poor';
+        var repGradeColor = rep.score >= 70 ? 'var(--cyan)' : rep.score >= 40 ? 'var(--text-secondary)' : 'var(--orange)';
+        html += '<div class="glass-card" style="margin-bottom:16px;">' +
+          '<div class="glass-card-title" style="margin-bottom:8px;">Domain Reputation</div>' +
+          '<div style="display:flex;align-items:center;gap:16px;margin-bottom:8px;">' +
+            '<div style="font-size:28px;font-weight:700;color:' + repGradeColor + ';">' + rep.score + '<span style="font-size:14px;font-weight:400;color:var(--text-tertiary);">/100</span></div>' +
+            '<div>' +
+              '<div style="font-weight:600;color:' + repGradeColor + ';">' + repGrade + '</div>' +
+              '<div style="color:var(--text-tertiary);font-size:var(--font-size-xs);">' + (rep.testsPassed || 0) + ' tests passed, ' + (rep.testsFailed || 0) + ' warnings — via WhoisXML</div>' +
+            '</div>' +
+          '</div>';
+        if (rep.tests && rep.tests.length > 0) {
+          var failedTests = rep.tests.filter(function(t) { return t.result !== 0; });
+          if (failedTests.length > 0) {
+            html += '<div style="margin-top:8px;">' +
+              '<div style="color:var(--text-secondary);font-size:var(--font-size-xs);font-weight:600;margin-bottom:4px;">Warnings:</div>';
+            failedTests.slice(0, 8).forEach(function(t) {
+              html += '<div style="color:var(--orange);font-size:var(--font-size-xs);font-family:var(--font-mono);padding:2px 0;">' + escapeHtml(t.test) + '</div>';
+            });
+            html += '</div>';
+          }
+        }
+        html += '</div>';
+      } else if (rep && !rep.available) {
+        html += '<div class="glass-card" style="margin-bottom:16px;">' +
+          '<div class="glass-card-title" style="margin-bottom:8px;">Domain Reputation</div>' +
+          '<div style="color:var(--text-tertiary);font-size:var(--font-size-sm);">Add WhoisXML API key in Settings > Credentials (whoisxml_api_key) for reputation scoring — 500 free lookups</div>' +
+          '</div>';
+      }
+
+      // ── WHOIS History (WebOSINT) ────────────────────────────────────
+      var whoisHist = data.whoisHistory;
+      if (whoisHist && whoisHist.records && whoisHist.records.length > 0) {
+        html += '<div class="glass-card" style="margin-bottom:16px;">' +
+          '<div class="glass-card-title" style="margin-bottom:8px;">WHOIS History (' + whoisHist.count + ' records)</div>' +
+          '<div style="color:var(--text-tertiary);font-size:var(--font-size-xs);margin-bottom:8px;">Historical domain ownership changes — via WhoisFreaks</div>' +
+          '<table class="data-table"><thead><tr><th>Date</th><th>Registrar</th><th>Registrant</th><th>Nameservers</th></tr></thead><tbody>';
+        whoisHist.records.slice(0, 10).forEach(function(r) {
+          html += '<tr>' +
+            '<td style="white-space:nowrap;font-size:var(--font-size-xs);">' + escapeHtml(r.date || r.created || '--') + '</td>' +
+            '<td style="font-size:var(--font-size-xs);">' + escapeHtml(r.registrar || '--') + '</td>' +
+            '<td style="font-size:var(--font-size-xs);">' + escapeHtml(r.registrant || '--') + '</td>' +
+            '<td style="font-size:var(--font-size-xs);font-family:var(--font-mono);max-width:200px;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml((r.nameservers || []).join(', ') || '--') + '</td>' +
+            '</tr>';
+        });
+        html += '</tbody></table></div>';
+      } else if (whoisHist && !whoisHist.available) {
+        html += '<div class="glass-card" style="margin-bottom:16px;">' +
+          '<div class="glass-card-title" style="margin-bottom:8px;">WHOIS History</div>' +
+          '<div style="color:var(--text-tertiary);font-size:var(--font-size-sm);">Add WhoisFreaks API key in Settings > Credentials (whoisfreaks_api_key) for historical WHOIS — 100 free lookups</div>' +
+          '</div>';
+      }
+
       // ── Re-analyze button ─────────────────────────────────────────
       if (!data.analysis) {
         html += '<div style="text-align:center;margin-top:16px;">' +
@@ -444,7 +532,7 @@ Views.osint = {
     var results = document.getElementById('osint-ip-results');
     btn.disabled = true;
     btn.textContent = 'Investigating...';
-    results.innerHTML = '<div class="loading-state"><div class="spinner spinner-lg"></div><div>Gathering intelligence on ' + escapeHtml(ip) + '...<br><span style="color:var(--text-tertiary);font-size:var(--font-size-xs);">Reverse DNS, geolocation, port scan, AI analysis</span></div></div>';
+    results.innerHTML = '<div class="loading-state"><div class="spinner spinner-lg"></div><div>Gathering intelligence on ' + escapeHtml(ip) + '...<br><span style="color:var(--text-tertiary);font-size:var(--font-size-xs);">Reverse DNS, dual-source geolocation, reverse IP, port scan, AI analysis</span></div></div>';
 
     fetch('/api/osint/ip', {
       method: 'POST',
@@ -495,7 +583,7 @@ Views.osint = {
 
       // ── Open Ports ────────────────────────────────────────────────
       var ports = data.openPorts || [];
-      html += '<div class="glass-card">' +
+      html += '<div class="glass-card" style="margin-bottom:16px;">' +
         '<div class="glass-card-title" style="margin-bottom:8px;">Port Scan</div>';
       if (ports.length > 0) {
         html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
@@ -522,6 +610,42 @@ Views.osint = {
         html += '<div style="color:var(--text-tertiary);font-size:var(--font-size-sm);">No open ports detected on common ports (22, 80, 443, 8080, 8443, 3389, 3306, 5432, 6379, 27017)</div>';
       }
       html += '</div>';
+
+      // ── Reverse IP (WebOSINT) ───────────────────────────────────
+      var revIP = data.reverseIP;
+      if (revIP && revIP.count > 0) {
+        html += '<div class="glass-card" style="margin-bottom:16px;">' +
+          '<div class="glass-card-title" style="margin-bottom:8px;">Reverse IP — Shared Hosting (' + revIP.count + ' domains)</div>' +
+          '<div style="color:var(--text-tertiary);font-size:var(--font-size-xs);margin-bottom:8px;">Other domains hosted on this IP — via HackerTarget</div>' +
+          '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+        revIP.domains.slice(0, 50).forEach(function(d) {
+          html += '<span class="tag" style="font-size:11px;">' + escapeHtml(d) + '</span>';
+        });
+        if (revIP.count > 50) html += '<span class="tag" style="color:var(--text-tertiary);">+' + (revIP.count - 50) + ' more</span>';
+        html += '</div></div>';
+      }
+
+      // ── Enhanced Geo Verification (WebOSINT) ───────────────────
+      var eGeo = data.enhancedGeo;
+      if (eGeo && eGeo.secondary) {
+        var verified = eGeo.verified;
+        html += '<div class="glass-card" style="margin-bottom:16px;">' +
+          '<div class="glass-card-title" style="margin-bottom:8px;">Dual-Source Geolocation ' +
+            '<span style="font-size:var(--font-size-xs);font-weight:400;color:' + (verified ? 'var(--cyan)' : 'var(--orange)') + ';">' + (verified ? 'VERIFIED' : 'MISMATCH') + '</span>' +
+          '</div>' +
+          '<div style="color:var(--text-tertiary);font-size:var(--font-size-xs);margin-bottom:8px;">Cross-verified from ' + (eGeo.sources || []).join(' + ') + '</div>' +
+          '<div class="grid-2">' +
+            '<div>' +
+              '<div style="color:var(--text-secondary);font-size:var(--font-size-xs);font-weight:600;margin-bottom:4px;">ip-api.com</div>' +
+              (eGeo.primary ? Views.osint.detailRow('City', eGeo.primary.city) + Views.osint.detailRow('Region', eGeo.primary.region) + Views.osint.detailRow('Country', eGeo.primary.country) + Views.osint.detailRow('ISP', eGeo.primary.isp) : '<div style="color:var(--text-tertiary);font-size:var(--font-size-xs);">unavailable</div>') +
+            '</div>' +
+            '<div>' +
+              '<div style="color:var(--text-secondary);font-size:var(--font-size-xs);font-weight:600;margin-bottom:4px;">ipinfo.io</div>' +
+              (eGeo.secondary ? Views.osint.detailRow('City', eGeo.secondary.city) + Views.osint.detailRow('Region', eGeo.secondary.region) + Views.osint.detailRow('Country', eGeo.secondary.country) + Views.osint.detailRow('Org', eGeo.secondary.org) + (eGeo.secondary.hostname ? Views.osint.detailRow('Hostname', eGeo.secondary.hostname) : '') : '<div style="color:var(--text-tertiary);font-size:var(--font-size-xs);">unavailable</div>') +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }
 
       results.innerHTML = html;
       Toast.success('IP investigation complete');

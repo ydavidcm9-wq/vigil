@@ -1,6 +1,6 @@
 /**
  * MCP Server Route — Model Context Protocol (Streamable HTTP)
- * Vigil Security — 33 tools, 7 resources, 8 prompts
+ * Vigil Security — 34 tools, 7 resources, 8 prompts
  *
  * SDK: @modelcontextprotocol/sdk v1.x
  * Transport: Streamable HTTP (stateless, one request = one connection)
@@ -30,7 +30,7 @@ module.exports = function (app, ctx) {
     });
 
     // ════════════════════════════════════════════════════════════════════════
-    // TOOLS (31)
+    // TOOLS (34)
     // ════════════════════════════════════════════════════════════════════════
 
     // 1. check_posture
@@ -170,6 +170,23 @@ module.exports = function (app, ctx) {
         return { content: [{ type: 'text', text: JSON.stringify(geo, null, 2) }] };
       } catch (e) {
         return { content: [{ type: 'text', text: 'IP lookup error: ' + e.message }], isError: true };
+      }
+    });
+
+    // 7b. osint_reverse_ip (WebOSINT-inspired)
+    server.tool('osint_reverse_ip', 'Reverse IP lookup — find all domains on same IP (WebOSINT)', {
+      ip: z.string().describe('IPv4 address to reverse lookup'),
+    }, async ({ ip }) => {
+      try {
+        const safeIP = ip.replace(/[^0-9.]/g, '');
+        if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(safeIP)) {
+          return { content: [{ type: 'text', text: 'Invalid IPv4 address' }], isError: true };
+        }
+        const osintEngine = require('../lib/osint-engine');
+        const result = await osintEngine.reverseIPLookup(safeIP);
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: 'Reverse IP error: ' + e.message }], isError: true };
       }
     });
 
@@ -1020,7 +1037,7 @@ Respond with valid JSON:
       url: mcpUrl,
       transport: 'streamable-http',
       version: '1.0.0',
-      tools: 33,
+      tools: 34,
       resources: 7,
       prompts: 8,
       instructions: {

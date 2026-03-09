@@ -3,7 +3,7 @@
 ## Overview
 AI-powered security operations platform. Express.js + Socket.IO on port 4100.
 Vanilla JS frontend — no React, no build step, no bundler.
-~33 route modules | ~20 libs | 37 views | 200+ endpoints | 6 npm deps.
+~35 route modules | ~27 libs | 37 views | 200+ endpoints | 6 npm deps.
 License: AGPL-3.0
 
 ## Quick Start
@@ -47,8 +47,8 @@ sudo apt-get update && sudo apt-get install -y postgresql-client-17
 ### Server (orchestrator)
 ```
 server.js                    -> Express + Socket.IO setup, auth middleware, intervals, .env loader
-routes/                      -> ~33 route modules
-lib/                         -> ~17 shared modules
+routes/                      -> ~35 route modules
+lib/                         -> ~27 shared modules
 data/                        -> Runtime JSON stores (scans, reports, notifications, agents,
                                 settings, audit-log)
 public/                      -> Vanilla JS frontend (ViewRegistry pattern)
@@ -58,7 +58,7 @@ docs/                        -> Documentation
 ### .env Loader (built-in, no dotenv dependency)
 Custom parser in server.js reads `security/.env` at startup. Sets `process.env[key]` only for keys not already set. Supports `KEY=VALUE` format, ignores comments (#) and blank lines.
 
-### Route Modules (~33)
+### Route Modules (~35)
 ```
 auth.js                -> Login, logout, session, 2FA setup/verify
 system.js              -> CPU, memory, disk, processes, server info
@@ -84,14 +84,14 @@ pentest.js             -> Pentest command library + engagement management (Recon
 credentials.js         -> AES-256-GCM credential vault
 notifications.js       -> Notification system (email, webhook, Slack)
 settings.js            -> Platform configuration, user preferences
-mcp.js                 -> MCP server (Streamable HTTP, 33 tools, 7 resources, 8 prompts)
+mcp.js                 -> MCP server (Streamable HTTP, 34 tools, 7 resources, 8 prompts)
 health.js              -> Health check endpoint, service status
 code-audit.js          -> LLM-driven source code vulnerability scanning + binary analysis routes
 ephemeral-infra.js     -> Disposable proxy nodes + SSH tunnels + OOB callback listener (fluffy-barnacle + pgrok inspired)
 intel-hub.js           -> Intel Hub (RSS feeds, CVE Watch, CISA KEV, AI Briefings)
 ```
 
-### Lib Modules (~18)
+### Lib Modules (~27)
 ```
 db.js                  -> PostgreSQL pool, dbQuery helper
 exec.js                -> Shell command execution wrapper (timeout, sanitization)
@@ -114,6 +114,7 @@ code-audit.js          -> LLM-driven code vulnerability scanner (7 vuln types, c
 ephemeral-proxy.js     -> Disposable Codespace proxy management (SOCKS5 tunnels, lifecycle)
 tunnel-manager.js      -> SSH tunnel lifecycle (forward/reverse/dynamic) + OOB callback HTTP listener (pgrok-inspired)
 web-recon.js           -> Scrapy-inspired web crawler (surface scan, exposed files, tech fingerprint)
+osint-engine.js        -> OSINT reconnaissance engine (domain/IP/WHOIS/DNS, reverse IP, reputation, WHOIS history, cert transparency)
 ghost-osint.js         -> Username enumeration (26 platforms) + phone number intelligence (70+ countries)
 raptor-engine.js       -> Adversarial analysis engine (MUST-GATE reasoning, 4-step exploitability validation)
 binary-analysis.js     -> Lightweight binary inspection (file, strings, readelf, objdump) + AI threat assessment
@@ -227,7 +228,7 @@ public/
 - Each customer's MCP server is isolated in their own container sandbox -- tenant-scoped, auth-gated.
 - SDK: `@modelcontextprotocol/sdk` + Zod schemas
 
-### Tools (33) — actual names from routes/mcp.js
+### Tools (34) — actual names from routes/mcp.js
 ```
 # System & Posture
 check_posture            -> Security posture score + grade breakdown
@@ -241,6 +242,7 @@ check_ssl                -> SSL/TLS certificate check (domain)
 # Intelligence & OSINT
 osint_domain             -> Domain DNS reconnaissance (A, MX, NS)
 osint_ip                 -> IP geolocation lookup (ip-api.com)
+osint_reverse_ip         -> Reverse IP lookup — find all domains on same IP (WebOSINT)
 triage_alert             -> AI alert triage (title, details, severity)
 hunt_threat              -> Threat hypothesis investigation (Linux evidence)
 
@@ -632,6 +634,15 @@ Users bring their own AI subscriptions. The app shells out to locally-installed 
 - Username checks use stealth HTTP headers, run in parallel batches of 5, with rate limiting
 - AI analysis for both: digital footprint assessment (username) and carrier/region analysis (phone)
 - API: `POST /api/osint/username`, `POST /api/osint/phone`
+
+### WebOSINT (C3n7ral051nt4g3ncy/WebOSINT-inspired)
+- Domain enrichment: reverse IP lookup (HackerTarget free API), domain reputation (WhoisXML), WHOIS history (WhoisFreaks)
+- IP enrichment: dual-source geolocation (ip-api.com + ipinfo.io cross-verification), reverse IP lookup
+- Integrated into existing Domain Intel + IP Lookup tabs in OSINT view (no new sidebar items)
+- Optional API keys stored in credential vault: `whoisxml_api_key`, `whoisfreaks_api_key`, `hackertarget_api_key`
+- Neural cache: `osint:reverse-ip:`, `osint:reputation:`, `osint:whois-history:`, `osint:ip-enhanced:` (10min TTL)
+- MCP tool: `osint_reverse_ip` (HackerTarget reverse IP, no key needed for free tier)
+- Lib: `lib/osint-engine.js` (reverseIPLookup, domainReputation, whoisHistory, ipLookupEnhanced, fetchText)
 
 ## Auth
 - PBKDF2 password hashing (lib/users.js)
