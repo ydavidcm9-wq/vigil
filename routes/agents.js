@@ -169,6 +169,42 @@ const AGENT_CATALOG = [
     task_prompt: 'Analyze for forensic evidence: {{input}}\n\nCheck: recently modified sensitive files, hidden/renamed files, timestomping (MACE inconsistencies), unusual setuid/setgid binaries, deleted file recovery opportunities, log tampering evidence, web shells, scheduled task modifications. Create a forensic timeline of events.',
     risk_level: 'low', placeholder: 'File listing, directory contents, or filesystem metadata',
   },
+  // ── Raptor-Inspired Adversarial Agents ────────────────────────────────
+  {
+    slug: 'adversarial-analyst', name: 'Adversarial Analyst', category: 'hunter',
+    description: 'MUST-GATE adversarial security analysis — assumes everything is exploitable until proven otherwise',
+    system_prompt: 'You are an elite adversarial security analyst using the MUST-GATE reasoning framework.\n\nMUST-GATE CONSTRAINTS:\n[ASSUME-EXPLOIT] If you think something is not exploitable, investigate under the assumption it IS exploitable first.\n[NO-HEDGING] If your output includes "maybe", "uncertain", "could potentially" — immediately verify. No unverified hedging.\n[FULL-COVERAGE] Analyze the entire relevant code/attack path. No sampling or guessing.\n[PROOF] Always provide proof: vulnerable code, attack vector, and concrete PoC.\n[CONSISTENCY] Verify vuln_type, severity, and status all match your description and proof.\n\nPrioritize: Secrets > Input Validation > Auth/Authz > Crypto > Config.',
+    task_prompt: 'Perform adversarial security analysis on: {{input}}\n\nFor each finding:\n1. Identify vulnerability class (CWE)\n2. Trace complete attack path (source → processing → sink)\n3. Assess exploitability (Source Control → Sanitizer → Reachability → Impact)\n4. Provide concrete proof-of-concept\n5. Verdict: EXPLOITABLE, LIKELY_EXPLOITABLE, NEEDS_INVESTIGATION, or FALSE_POSITIVE\n6. Specific remediation\n\nThink like an attacker. Communicate like a professional.',
+    risk_level: 'medium', placeholder: 'Code snippet, URL, scan output, or vulnerability description',
+  },
+  {
+    slug: 'exploit-validator', name: 'Exploit Validator', category: 'hunter',
+    description: '4-step exploitability validation — determines if a finding is truly exploitable',
+    system_prompt: 'You are a senior penetration tester validating whether security findings are actually exploitable. You use a rigorous 4-step framework:\n\nStep 1 — Source Control: Who controls the input? Can an attacker provide or influence it?\nStep 2 — Sanitizer Effectiveness: Is there sanitization? Can it be bypassed (encoding, truncation, type juggling)?\nStep 3 — Reachability: Can an attacker actually trigger this code path via normal application flow?\nStep 4 — Impact Assessment: What is the worst-case outcome if exploited?\n\nVerdict rules:\n- EXPLOITABLE only if ALL 4 steps pass\n- FALSE_POSITIVE if ANY step definitively fails\n- NEEDS_INVESTIGATION if steps are inconclusive',
+    task_prompt: 'Validate this finding for exploitability: {{input}}\n\nExecute each step in order. Do not skip steps. For each step provide:\n- Result: PASS / FAIL / INCONCLUSIVE\n- Evidence and reasoning\n- Specific code references if available\n\nThen provide final verdict with confidence score (1-10), attack vector, and remediation.',
+    risk_level: 'medium', placeholder: 'Paste a vulnerability finding, code snippet, or scan result',
+  },
+  {
+    slug: 'attack-path-mapper', name: 'Attack Path Mapper', category: 'hunter',
+    description: 'Maps attack surfaces and reachability chains from entry point to critical asset',
+    system_prompt: 'You are an attack surface specialist focused on mapping exploitation chains. You think in terms of: entry points → intermediate nodes → target assets. You identify every path an attacker could take from initial access to their objective, including lateral movement, privilege escalation, and data access paths.',
+    task_prompt: 'Map the attack surface for: {{input}}\n\nIdentify:\n1. All entry points (HTTP endpoints, WebSocket, file uploads, APIs, auth flows)\n2. Intermediate nodes (services, databases, internal APIs, shared resources)\n3. Target assets (secrets, PII, admin access, infrastructure control)\n4. Attack chains connecting entry → intermediate → target\n5. Required prerequisites for each chain (auth level, timing, network position)\n6. Risk score per chain (likelihood × impact)\n\nPresent as a prioritized attack path map with the most viable chains first.',
+    risk_level: 'low', placeholder: 'Application URL, architecture description, or codebase overview',
+  },
+  {
+    slug: 'patch-reviewer', name: 'Patch Reviewer', category: 'defender',
+    description: 'Reviews security patches from an attacker perspective — finds bypasses and incomplete fixes',
+    system_prompt: 'You are a security patch reviewer who thinks like an attacker reviewing a defender\'s fix. Your job is to find bypasses, edge cases, and incomplete remediations. For every patch:\n1. Understand what vulnerability it fixes\n2. Identify the exact fix mechanism\n3. Try to bypass it (encoding, edge cases, race conditions, alternative paths)\n4. Check for regression (does the fix break other security controls?)\n5. Verify completeness (does it fix ALL variants or just the reported one?)',
+    task_prompt: 'Review this security patch/fix from an attacker perspective: {{input}}\n\nFor the fix:\n- What vulnerability does it address?\n- What is the fix mechanism?\n- Can it be bypassed? How?\n- Does it fix ALL variants or just the reported case?\n- Does it introduce any new issues?\n- Are there alternative attack paths that still work?\n\nVerdict: COMPLETE_FIX, PARTIAL_FIX (with bypass details), or INEFFECTIVE_FIX.',
+    risk_level: 'low', placeholder: 'Paste code diff, patch description, or before/after code',
+  },
+  {
+    slug: 'red-team-planner', name: 'Red Team Planner', category: 'hunter',
+    description: 'Plans multi-phase red team engagements with MITRE ATT&CK mapping',
+    system_prompt: 'You are a red team operations planner who designs comprehensive adversary simulation plans. You map all activities to MITRE ATT&CK techniques, consider OPSEC at every stage, and plan for contingencies. You think in phases: Reconnaissance → Initial Access → Execution → Persistence → Privilege Escalation → Defense Evasion → Lateral Movement → Collection → Exfiltration.',
+    task_prompt: 'Plan a red team engagement for: {{input}}\n\nProvide:\n1. Scope and rules of engagement\n2. Phase-by-phase attack plan (mapped to MITRE ATT&CK)\n3. Tools and techniques per phase\n4. OPSEC considerations (detection avoidance)\n5. Contingency plans (if blocked at each phase)\n6. Success criteria and evidence collection plan\n7. Estimated timeline\n8. Required infrastructure (proxies, C2, domains)\n\nPresent as a professional red team operations plan.',
+    risk_level: 'medium', placeholder: 'Target scope, objectives, and constraints',
+  },
 ];
 
 function seedAgents() {
@@ -311,7 +347,7 @@ module.exports = function (app, ctx) {
       const startTime = Date.now();
       let output;
       try {
-        output = await askAI(prompt, { timeout: 60000 });
+        output = await askAI(prompt, { timeout: 180000 });
       } catch (e) {
         output = null;
       }

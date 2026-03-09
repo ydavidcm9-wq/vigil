@@ -190,6 +190,41 @@ module.exports = function (app, ctx) {
     });
   });
 
+  // POST /api/code-audit/:id/validate/:findingIdx — Raptor-style exploitability validation
+  app.post('/api/code-audit/:id/validate/:findingIdx', requireRole('analyst'), async (req, res) => {
+    if (!askAIJSON) return res.status(503).json({ error: 'AI provider not configured' });
+
+    const scans = readJSON(SCANS_PATH, []);
+    const scan = scans.find(s => s.id === req.params.id);
+    if (!scan) return res.status(404).json({ error: 'Scan not found' });
+
+    const idx = parseInt(req.params.findingIdx, 10);
+    const finding = (scan.findings || [])[idx];
+    if (!finding) return res.status(404).json({ error: 'Finding not found at index ' + idx });
+
+    try {
+      const { validateExploitability } = require('../lib/raptor-engine');
+
+      // Try to read source code around the finding for context
+      let codeContext = '';
+      if (finding.file) {
+        try {
+          const targetFile = path.resolve(scan.target || '', finding.file);
+          const source = fs.readFileSync(targetFile, 'utf8');
+          const lines = source.split('\n');
+          const startLine = Math.max(0, (finding.line || 1) - 15);
+          const endLine = Math.min(lines.length, (finding.line || 1) + 25);
+          codeContext = `File: ${finding.file}\nLines ${startLine + 1}-${endLine}:\n` + lines.slice(startLine, endLine).map((l, i) => `${startLine + i + 1}: ${l}`).join('\n');
+        } catch {}
+      }
+
+      const result = await validateExploitability(finding, { askAIJSON, codeContext, timeout: 120000 });
+      res.json(result);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // GET /api/code-audit/:id — get code audit scan details (MUST be after specific routes)
   app.get('/api/code-audit/:id', requireAuth, (req, res) => {
     // Cache completed scans (immutable once complete — 10 min TTL)

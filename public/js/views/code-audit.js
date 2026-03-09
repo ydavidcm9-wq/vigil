@@ -229,6 +229,7 @@ Views['code-audit'] = {
 
     progressCard.style.display = 'none';
     scanBtn.disabled = false;
+    this._lastScanId = scan.id;
 
     if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
 
@@ -302,6 +303,10 @@ Views['code-audit'] = {
             (f.dataFlow ? '<div class="detail-row"><div class="detail-label">Data Flow</div><div class="detail-value" style="font-family:var(--font-mono);font-size:var(--font-size-xs);color:var(--cyan);">' + escapeHtml(f.dataFlow) + '</div></div>' : '') +
             (f.poc ? '<div class="detail-row"><div class="detail-label">Proof of Concept</div><div class="detail-value"><pre style="background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;overflow-x:auto;font-size:var(--font-size-xs);color:var(--orange);margin:0;">' + escapeHtml(f.poc) + '</pre></div></div>' : '') +
             '<div class="detail-row"><div class="detail-label">Remediation</div><div class="detail-value" style="color:var(--cyan);white-space:pre-wrap;">' + escapeHtml(f.remediation || '--') + '</div></div>' +
+            '<div style="margin-top:10px;display:flex;gap:8px;">' +
+              '<button class="btn btn-ghost btn-sm ca-validate-btn" data-idx="' + idx + '" onclick="event.stopPropagation();Views[\'code-audit\'].validateFinding(' + idx + ')" style="font-size:11px;border-color:var(--cyan);">Validate Exploitability</button>' +
+            '</div>' +
+            '<div id="ca-validation-' + idx + '"></div>' +
           '</div>' +
         '</div>';
       });
@@ -324,5 +329,81 @@ Views['code-audit'] = {
     if (detail) {
       detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
     }
+  },
+
+  validateFinding: function(idx) {
+    if (!this._lastScanId) { Toast.error('No scan to validate'); return; }
+
+    var btn = document.querySelector('.ca-validate-btn[data-idx="' + idx + '"]');
+    var container = document.getElementById('ca-validation-' + idx);
+    if (!container) return;
+
+    if (btn) { btn.disabled = true; btn.textContent = 'Validating...'; }
+    container.innerHTML = '<div class="loading-state" style="padding:12px;"><div class="spinner spinner-sm"></div><div style="font-size:var(--font-size-xs);margin-top:6px;">Running MUST-GATE exploitability validation...</div></div>';
+
+    var scanId = this._lastScanId;
+    fetch('/api/code-audit/' + scanId + '/validate/' + idx, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin'
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Validate Exploitability'; }
+
+      if (result.error) {
+        container.innerHTML = '<div style="color:var(--orange);font-size:var(--font-size-xs);margin-top:8px;">Validation error: ' + escapeHtml(result.error) + '</div>';
+        return;
+      }
+
+      var verdictColors = { exploitable: 'var(--orange)', likely_exploitable: 'var(--orange)', needs_investigation: 'var(--text-secondary)', false_positive: 'var(--cyan)' };
+      var verdictLabels = { exploitable: 'EXPLOITABLE', likely_exploitable: 'LIKELY EXPLOITABLE', needs_investigation: 'NEEDS INVESTIGATION', false_positive: 'FALSE POSITIVE' };
+      var vc = verdictColors[result.verdict] || 'var(--text-secondary)';
+      var vl = verdictLabels[result.verdict] || result.verdict;
+
+      var html = '<div style="margin-top:12px;padding:14px;border-radius:8px;border:1px solid ' + vc + ';background:rgba(0,0,0,0.2);">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">' +
+          '<span style="font-size:14px;font-weight:700;color:' + vc + ';padding:4px 10px;border:2px solid ' + vc + ';border-radius:6px;">' + vl + '</span>' +
+          '<span style="color:var(--text-tertiary);font-size:var(--font-size-xs);">Confidence: ' + (result.confidence || 0) + '/10</span>' +
+          '<span style="color:var(--text-tertiary);font-size:var(--font-size-xs);margin-left:auto;">MUST-GATE Validated</span>' +
+        '</div>';
+
+      // 4-step results
+      if (result.steps && result.steps.length > 0) {
+        html += '<div style="margin-bottom:10px;">';
+        result.steps.forEach(function(s) {
+          var stepColor = s.result === 'pass' || s.result === 'critical' || s.result === 'high' ? 'var(--orange)' : s.result === 'fail' ? 'var(--cyan)' : 'var(--text-tertiary)';
+          var stepIcon = s.result === 'pass' || s.result === 'critical' || s.result === 'high' ? '&#9888;' : s.result === 'fail' ? '&#10003;' : '&#8943;';
+          html += '<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:var(--font-size-xs);">' +
+            '<div style="display:flex;align-items:center;gap:8px;">' +
+              '<span style="color:' + stepColor + ';font-weight:600;">' + stepIcon + ' Step ' + s.step + '</span>' +
+              '<span style="color:var(--text-primary);font-weight:500;">' + escapeHtml(s.name) + '</span>' +
+              '<span style="color:' + stepColor + ';margin-left:auto;text-transform:uppercase;font-weight:600;">' + escapeHtml(s.result) + '</span>' +
+            '</div>' +
+            '<div style="color:var(--text-tertiary);margin-top:3px;padding-left:24px;line-height:1.5;">' + escapeHtml(s.analysis || '').substring(0, 300) + '</div>' +
+          '</div>';
+        });
+        html += '</div>';
+      }
+
+      // Attack vector and PoC
+      if (result.attack_vector) {
+        html += '<div class="detail-row"><div class="detail-label" style="font-size:11px;">Attack Vector</div><div class="detail-value" style="font-size:var(--font-size-xs);color:var(--orange);">' + escapeHtml(result.attack_vector) + '</div></div>';
+      }
+      if (result.proof_of_concept) {
+        html += '<div class="detail-row"><div class="detail-label" style="font-size:11px;">Validated PoC</div><div class="detail-value"><pre style="background:rgba(0,0,0,0.3);padding:8px;border-radius:4px;font-size:11px;color:var(--orange);margin:0;overflow-x:auto;">' + escapeHtml(result.proof_of_concept) + '</pre></div></div>';
+      }
+      if (result.reasoning) {
+        html += '<div class="detail-row"><div class="detail-label" style="font-size:11px;">Reasoning</div><div class="detail-value" style="font-size:var(--font-size-xs);color:var(--text-secondary);line-height:1.6;">' + escapeHtml(result.reasoning) + '</div></div>';
+      }
+
+      html += '</div>';
+      container.innerHTML = html;
+      Toast.success('Exploitability validation complete: ' + vl);
+    })
+    .catch(function(err) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Validate Exploitability'; }
+      container.innerHTML = '<div style="color:var(--orange);font-size:var(--font-size-xs);margin-top:8px;">Validation failed: ' + escapeHtml(err.message) + '</div>';
+    });
   }
 };

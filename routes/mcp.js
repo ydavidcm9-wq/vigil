@@ -1,6 +1,6 @@
 /**
  * MCP Server Route — Model Context Protocol (Streamable HTTP)
- * Vigil Security — 22 tools, 6 resources, 7 prompts
+ * Vigil Security — 24 tools, 6 resources, 7 prompts
  *
  * SDK: @modelcontextprotocol/sdk v1.x
  * Transport: Streamable HTTP (stateless, one request = one connection)
@@ -514,6 +514,39 @@ module.exports = function (app, ctx) {
       }
     });
 
+    // 23. validate_exploitability (Raptor-inspired)
+    server.tool('validate_exploitability', 'Validate whether a security finding is truly exploitable using 4-step MUST-GATE analysis', {
+      findingTitle: z.string().describe('Title or description of the finding to validate'),
+      findingDetails: z.string().describe('Vulnerability details, code context, or data flow'),
+      severity: z.string().default('medium').describe('Reported severity'),
+      vulnType: z.string().default('').describe('Vulnerability type (RCE, SQLi, XSS, SSRF, etc.)'),
+    }, async ({ findingTitle, findingDetails, severity, vulnType }) => {
+      try {
+        if (!ctx.askAIJSON) return { content: [{ type: 'text', text: 'AI not configured' }], isError: true };
+        const { validateExploitability } = require('../lib/raptor-engine');
+        const finding = { title: findingTitle, details: findingDetails, severity, vulnType, description: findingDetails };
+        const result = await validateExploitability(finding, { askAIJSON: ctx.askAIJSON, codeContext: findingDetails, timeout: 120000 });
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: 'Validation error: ' + e.message }], isError: true };
+      }
+    });
+
+    // 24. adversarial_analysis (Raptor-inspired)
+    server.tool('adversarial_analysis', 'Deep adversarial security analysis with MUST-GATE reasoning constraints', {
+      target: z.string().describe('Target to analyze (URL, code snippet, system description)'),
+      context: z.string().default('').describe('Additional context (scan results, architecture, configuration)'),
+    }, async ({ target, context }) => {
+      try {
+        if (!ctx.askAIJSON) return { content: [{ type: 'text', text: 'AI not configured' }], isError: true };
+        const { adversarialAnalysis } = require('../lib/raptor-engine');
+        const result = await adversarialAnalysis(target, context, { askAIJSON: ctx.askAIJSON, timeout: 120000 });
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: 'Analysis error: ' + e.message }], isError: true };
+      }
+    });
+
     // ════════════════════════════════════════════════════════════════════════
     // RESOURCES (6)
     // ════════════════════════════════════════════════════════════════════════
@@ -731,7 +764,7 @@ module.exports = function (app, ctx) {
       url: mcpUrl,
       transport: 'streamable-http',
       version: '1.0.0',
-      tools: 22,
+      tools: 24,
       resources: 6,
       prompts: 7,
       instructions: {

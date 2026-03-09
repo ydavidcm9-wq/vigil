@@ -3,7 +3,7 @@
 ## Overview
 AI-powered security operations platform. Express.js + Socket.IO on port 4100.
 Vanilla JS frontend — no React, no build step, no bundler.
-~33 route modules | ~19 libs | 37 views | 200+ endpoints | 6 npm deps.
+~33 route modules | ~20 libs | 37 views | 200+ endpoints | 6 npm deps.
 License: AGPL-3.0
 
 ## Quick Start
@@ -90,7 +90,7 @@ code-audit.js          -> LLM-driven source code vulnerability scanning (Vulnhun
 ephemeral-infra.js     -> Disposable proxy node management (fluffy-barnacle-inspired)
 ```
 
-### Lib Modules (~17)
+### Lib Modules (~18)
 ```
 db.js                  -> PostgreSQL pool, dbQuery helper
 exec.js                -> Shell command execution wrapper (timeout, sanitization)
@@ -113,6 +113,7 @@ code-audit.js          -> LLM-driven code vulnerability scanner (7 vuln types, c
 ephemeral-proxy.js     -> Disposable Codespace proxy management (SOCKS5 tunnels, lifecycle)
 web-recon.js           -> Scrapy-inspired web crawler (surface scan, exposed files, tech fingerprint)
 ghost-osint.js         -> Username enumeration (26 platforms) + phone number intelligence (70+ countries)
+raptor-engine.js       -> Adversarial analysis engine (MUST-GATE reasoning, 4-step exploitability validation)
 ```
 
 ### Frontend (ViewRegistry pattern)
@@ -208,7 +209,7 @@ public/
 - Each customer's MCP server is isolated in their own container sandbox -- tenant-scoped, auth-gated.
 - SDK: `@modelcontextprotocol/sdk` + Zod schemas
 
-### Tools (22) — actual names from routes/mcp.js
+### Tools (24) — actual names from routes/mcp.js
 ```
 # System & Posture
 check_posture            -> Security posture score + grade breakdown
@@ -249,6 +250,10 @@ list_proxy_nodes         -> List ephemeral proxy nodes + tunnel status
 create_proxy_node        -> Create disposable Codespace proxy (requires gh auth)
 start_proxy_tunnel       -> Start SOCKS5 tunnel through proxy node
 plan_proxy_infrastructure -> AI proxy infrastructure planning
+
+# Adversarial (Raptor-inspired)
+validate_exploitability  -> 4-step MUST-GATE exploitability validation
+adversarial_analysis     -> Deep adversarial security analysis with reasoning constraints
 ```
 
 ### Resources
@@ -270,7 +275,7 @@ plan_proxy_infrastructure -> AI proxy infrastructure planning
 
 ### GUI Test Endpoint
 - `POST /api/mcp/test` uses InMemoryTransport (bypasses HTTP handshake, 5min tool timeout)
-- GUI playground: search bar + 8 category tabs (All/Scanning/Intelligence/Compliance/Incident/System/Code Audit/Proxy), schema-driven param forms, 4 prompt workflow cards, request log
+- GUI playground: search bar + 9 category tabs (All/Scanning/Intelligence/Compliance/Incident/System/Code Audit/Proxy/Adversarial), schema-driven param forms, 4 prompt workflow cards, request log
 - MCP tools that need AI have 120s internal timeout; MCP client timeout is 300s to accommodate
 
 ## ViewRegistry Pattern
@@ -451,6 +456,17 @@ Users bring their own AI subscriptions. The app shells out to locally-installed 
 - Supports JS, TS, Python, Ruby, PHP, Java, Go, C#
 - Findings normalized to standard scan format, visible in Findings view
 - API: `POST /api/code-audit`, `GET /api/code-audit/:id`, `POST /api/code-audit/preview`
+- Exploitability validation: `POST /api/code-audit/:id/validate/:findingIdx` (Raptor 4-step analysis)
+
+### Raptor Engine (Adversarial Analysis)
+- MUST-GATE reasoning framework: 7 forced constraints (ASSUME-EXPLOIT, STRICT-SEQUENCE, CHECKLIST, NO-HEDGING, FULL-COVERAGE, PROOF, CONSISTENCY)
+- 4-step exploitability validation: Source Control → Sanitizer Effectiveness → Reachability → Impact Assessment
+- Adversarial prioritization: Secrets > Input Validation > Auth/Authz > Crypto > Config
+- 5 Raptor-inspired agents: Adversarial Analyst, Exploit Validator, Attack Path Mapper, Patch Reviewer, Red Team Planner
+- 2 MCP tools: `validate_exploitability`, `adversarial_analysis`
+- Code audit "Validate Exploitability" button runs per-finding 4-step analysis
+- Lib: `lib/raptor-engine.js` (exports: adversarialAnalysis, validateExploitability, buildAdversarialPrompt, buildExploitabilityPrompt)
+- Agent timeout: 180s (Raptor agents produce 3-14K chars of detailed analysis)
 
 ### Proxy Nodes (fluffy-barnacle-inspired)
 - GitHub Codespaces as disposable SOCKS5 proxy nodes for anonymous scanning

@@ -370,17 +370,17 @@ Views.docs = {
 
       /* Security Agents */
       '<h3 style="color:var(--cyan);margin:20px 0 8px;font-size:var(--font-size-lg);">Security Agents</h3>' +
-      '<p>20 built-in AI security agents, each a specialist with a focused system prompt. Create unlimited custom agents. Run them against any target with natural language input.</p>' +
+      '<p>24 built-in AI security agents, each a specialist with a focused system prompt. Includes 5 Raptor-inspired adversarial agents with MUST-GATE reasoning. Create unlimited custom agents. Run them against any target with natural language input.</p>' +
       '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/SecurityAgents.png" alt="Vigil Security Agents" style="width:100%;display:block;" loading="lazy"></div>' +
 
       '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">What you see:</p>' +
       '<ul style="padding-left:20px;list-style:disc;">' +
-        '<li><strong>Stats Bar</strong> &mdash; Total Agents (20), Scanners (6), Analyzers (6), Total Runs (cumulative). Animated counters.</li>' +
+        '<li><strong>Stats Bar</strong> &mdash; Total Agents (24), Scanners (6), Analyzers (6), Total Runs (cumulative). Animated counters.</li>' +
         '<li><strong>Category Tabs</strong> &mdash; All, Scanners, Analyzers, Defenders, Hunters, Custom. Filter the grid.</li>' +
         '<li><strong>Agent Cards Grid</strong> &mdash; 3-column layout. Each card shows: category icon, agent name, category tag (colored), risk level (low/medium/high), run count, description, orange "Run Agent" button.</li>' +
       '</ul>' +
 
-      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Built-in Agents (20):</p>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Built-in Agents (24):</p>' +
       '<table class="data-table" style="font-size:var(--font-size-xs);"><thead><tr><th>Agent</th><th>Category</th><th>Risk</th><th>What It Does</th></tr></thead><tbody>' +
         '<tr><td>Port Scanner</td><td>Scanner</td><td>Low</td><td>Analyzes open ports, services, and network attack surface</td></tr>' +
         '<tr><td>Subdomain Enumerator</td><td>Scanner</td><td>Low</td><td>Discovers subdomains and maps external attack surface</td></tr>' +
@@ -392,13 +392,13 @@ Views.docs = {
         '<tr><td>IAM Policy Analyzer</td><td>Analyzer</td><td>Low</td><td>Identifies over-privileged access, unused permissions, and IAM risks</td></tr>' +
         '<tr><td>PCI DSS Checker</td><td>Analyzer</td><td>Low</td><td>Evaluates PCI DSS v4.0 payment security requirements</td></tr>' +
       '</tbody></table>' +
-      '<p style="color:var(--text-tertiary);font-size:var(--font-size-xs);margin-top:4px;">Plus 11 more: Log Analyzer, Malware Analyst, Network Forensics, Firewall Auditor, Incident Responder, Threat Hunter, APT Detector, and custom agents you create.</p>' +
+      '<p style="color:var(--text-tertiary);font-size:var(--font-size-xs);margin-top:4px;">Plus 15 more: HIPAA Checker, Data Classifier, Password Auditor, Incident Playbook, Firewall Auditor, Malware Analyzer, Log Hunter, Network Anomaly, Memory Forensics, Disk Forensics, and 5 Raptor adversarial agents (Adversarial Analyst, Exploit Validator, Attack Path Mapper, Patch Reviewer, Red Team Planner).</p>' +
 
       '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Running an Agent:</p>' +
       '<ol style="padding-left:20px;list-style:decimal;">' +
         '<li style="margin-bottom:4px;">Click an agent card or its "Run Agent" button.</li>' +
         '<li style="margin-bottom:4px;">Enter target/input in the textarea (e.g., "192.168.1.0/24" for Port Scanner, or "Check our AWS S3 bucket policies" for AWS Auditor).</li>' +
-        '<li style="margin-bottom:4px;">Click Run. AI executes with a 60-second timeout.</li>' +
+        '<li style="margin-bottom:4px;">Click Run. AI executes with a 180-second timeout.</li>' +
         '<li style="margin-bottom:4px;">View output with color-coded border: cyan = success, orange = error.</li>' +
         '<li style="margin-bottom:4px;">View run history (last 50 runs per agent) with time, status, duration, input.</li>' +
       '</ol>' +
@@ -639,26 +639,26 @@ Views.docs = {
 
       /* MCP Playground */
       '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">MCP Playground</h3>' +
-      '<p>Interactive testing interface for Vigil\'s built-in MCP (Model Context Protocol) server. Test all 22 tools, browse 6 resources, run 7 AI prompt workflows, and connect external AI assistants.</p>' +
+      '<p>Interactive testing interface for Vigil\'s built-in MCP (Model Context Protocol) server. Test all 24 tools, browse 6 resources, run 7 AI prompt workflows, and connect external AI assistants.</p>' +
       '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/MCP_Playground.png" alt="Vigil MCP Playground" style="width:100%;display:block;" loading="lazy"></div>' +
 
       '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">5 Zones:</p>' +
       '<ol style="padding-left:20px;list-style:decimal;">' +
-        '<li style="margin-bottom:6px;"><strong>Stats Bar</strong> &mdash; Tools (22), Resources (6), Prompts (7), MCP Calls counter.</li>' +
+        '<li style="margin-bottom:6px;"><strong>Stats Bar</strong> &mdash; Tools (24), Resources (6), Prompts (7), MCP Calls counter.</li>' +
         '<li style="margin-bottom:6px;"><strong>AI Security Workflows</strong> &mdash; 4 clickable prompt cards: Security Audit (Multi-Tool), Threat Briefing (Daily), Incident Response (Interactive), Compliance Report (SOC2/ISO/NIST). Click to run the workflow with optional parameters. 3 additional prompts available via tool explorer: Code Security Review, WAF Reconnaissance, Anonymous Pentest Setup.</li>' +
         '<li style="margin-bottom:6px;"><strong>Live Security Data</strong> &mdash; 3 MCP resource cards showing real-time data: Security Posture (score + grade from vigil://posture), Active Threats (count + critical badge + top 3 threats from vigil://threats), Open Findings (count + severity breakdown from vigil://findings). 3 additional resources: vigil://code-audit-findings, vigil://waf-signatures, vigil://proxy-nodes.</li>' +
-        '<li style="margin-bottom:6px;"><strong>Tool Explorer</strong> &mdash; Two-panel layout. Left: search bar + category tabs (Scanning/Intelligence/Compliance/Incident/System/Code Audit/Proxy) + tool list. Right: selected tool with description, auto-generated parameter form, Execute button, smart result rendering.</li>' +
+        '<li style="margin-bottom:6px;"><strong>Tool Explorer</strong> &mdash; Two-panel layout. Left: search bar + category tabs (Scanning/Intelligence/Compliance/Incident/System/Code Audit/Proxy/Adversarial) + tool list. Right: selected tool with description, auto-generated parameter form, Execute button, smart result rendering.</li>' +
         '<li style="margin-bottom:6px;"><strong>Request Log</strong> &mdash; Last 20 MCP calls with timestamp, status dot (cyan=success, orange=error), method, params, duration in ms.</li>' +
       '</ol>' +
 
-      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">22 MCP Tools:</p>' +
-      '<div class="code-block" style="margin-bottom:8px;font-size:11px;">check_posture         &mdash; Security posture score + breakdown\nscan_ports            &mdash; Nmap port scan (target, ports)\nscan_vulnerabilities  &mdash; Nuclei scan (target, severity)\ncheck_ssl             &mdash; SSL certificate check (domain)\nquery_logs            &mdash; Natural language log search\nosint_domain          &mdash; Domain DNS recon\nosint_ip              &mdash; IP geolocation lookup\ntriage_alert          &mdash; AI alert triage (title, details, severity)\nhunt_threat           &mdash; Threat hypothesis investigation\nrun_agent             &mdash; Execute security agent (slug, input)\nlaunch_campaign       &mdash; Multi-agent campaign (goal, maxAgents)\ngenerate_report       &mdash; Report generation (type)\ncompliance_check      &mdash; Framework compliance check\nlist_findings         &mdash; Get vulnerability findings\nincident_create       &mdash; Create security incident\nrun_code_audit        &mdash; AI code vulnerability scan (target, languages)\nget_code_audit_results&mdash; Get code audit findings (scanId)\ndetect_waf            &mdash; WAF/CDN fingerprinting (target, probeMode)\nlist_proxy_nodes      &mdash; List ephemeral proxy nodes\ncreate_proxy_node     &mdash; Create disposable Codespace proxy\nstart_proxy_tunnel    &mdash; Start SOCKS5 tunnel through proxy\nplan_proxy_infrastructure &mdash; AI proxy infrastructure planning</div>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">24 MCP Tools:</p>' +
+      '<div class="code-block" style="margin-bottom:8px;font-size:11px;">check_posture         &mdash; Security posture score + breakdown\nscan_ports            &mdash; Nmap port scan (target, ports)\nscan_vulnerabilities  &mdash; Nuclei scan (target, severity)\ncheck_ssl             &mdash; SSL certificate check (domain)\nquery_logs            &mdash; Natural language log search\nosint_domain          &mdash; Domain DNS recon\nosint_ip              &mdash; IP geolocation lookup\ntriage_alert          &mdash; AI alert triage (title, details, severity)\nhunt_threat           &mdash; Threat hypothesis investigation\nrun_agent             &mdash; Execute security agent (slug, input)\nlaunch_campaign       &mdash; Multi-agent campaign (goal, maxAgents)\ngenerate_report       &mdash; Report generation (type)\ncompliance_check      &mdash; Framework compliance check\nlist_findings         &mdash; Get vulnerability findings\nincident_create       &mdash; Create security incident\nrun_code_audit        &mdash; AI code vulnerability scan (target, languages)\nget_code_audit_results&mdash; Get code audit findings (scanId)\ndetect_waf            &mdash; WAF/CDN fingerprinting (target, probeMode)\nlist_proxy_nodes      &mdash; List ephemeral proxy nodes\ncreate_proxy_node     &mdash; Create disposable Codespace proxy\nstart_proxy_tunnel    &mdash; Start SOCKS5 tunnel through proxy\nplan_proxy_infrastructure &mdash; AI proxy infrastructure planning\nvalidate_exploitability &mdash; MUST-GATE exploitability validation (Raptor)\nadversarial_analysis  &mdash; Deep adversarial security analysis (Raptor)</div>' +
 
       '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Connecting External AI:</p>' +
       '<p>Click <strong>Connect to Claude</strong> for setup instructions:</p>' +
       '<div class="code-block" style="margin-bottom:8px;"># Claude Code\nclaude mcp add vigil --transport http http://localhost:4100/mcp\n\n# Claude Desktop config:\n{ "mcpServers": { "vigil": { "url": "http://localhost:4100/mcp" } } }\n\n# cURL test:\ncurl -X POST http://localhost:4100/mcp -H "Content-Type: application/json" \\\n  -d \'{"jsonrpc":"2.0","method":"tools/list","id":1}\'</div>' +
-      '<p><strong>Q: What is MCP?</strong><br>A: Model Context Protocol is a standard for AI assistants to interact with external tools. Vigil exposes 22 security tools, 6 live resources, and 7 prompt workflows via MCP. Claude (or any MCP-compatible AI) can run scans, check posture, triage alerts, hunt threats, audit code, detect WAFs, manage proxy infrastructure, and generate reports.</p>' +
-      '<p><strong>Q: Why do some MCP tools take a while?</strong><br>A: AI-powered tools (triage_alert, hunt_threat, generate_report, compliance_check, run_agent, launch_campaign, plan_proxy_infrastructure) use the configured AI provider and may take 15-90 seconds. Scanner tools (scan_ports, scan_vulnerabilities) depend on scan complexity. The MCP test endpoint supports up to 5 minute timeouts.</p>' +
+      '<p><strong>Q: What is MCP?</strong><br>A: Model Context Protocol is a standard for AI assistants to interact with external tools. Vigil exposes 24 security tools, 6 live resources, and 7 prompt workflows via MCP. Claude (or any MCP-compatible AI) can run scans, check posture, triage alerts, hunt threats, audit code, detect WAFs, manage proxy infrastructure, validate exploitability, run adversarial analysis, and generate reports.</p>' +
+      '<p><strong>Q: Why do some MCP tools take a while?</strong><br>A: AI-powered tools (triage_alert, hunt_threat, generate_report, compliance_check, run_agent, launch_campaign, plan_proxy_infrastructure, validate_exploitability, adversarial_analysis) use the configured AI provider and may take 15-120 seconds. Scanner tools (scan_ports, scan_vulnerabilities) depend on scan complexity. The MCP test endpoint supports up to 5 minute timeouts.</p>' +
       '<p><strong>Q: Why does create_proxy_node fail?</strong><br>A: It requires the GitHub CLI (gh) to be authenticated with an account that has Codespaces access. Run <code>gh auth login</code> inside the container to configure.</p>',
 
 
@@ -861,7 +861,7 @@ Views.docs = {
       '<h3 style="color:var(--cyan);margin:16px 0 8px;">Log Analysis</h3>' +
       '<div class="code-block" style="margin-bottom:8px;">POST /api/logs/query         { query, source }  NL log search + AI analysis\nGET  /api/logs/sources        Available log sources</div>' +
 
-      '<h3 style="color:var(--cyan);margin:16px 0 8px;">MCP Server (22 tools, 6 resources, 7 prompts)</h3>' +
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">MCP Server (24 tools, 6 resources, 7 prompts)</h3>' +
       '<div class="code-block" style="margin-bottom:8px;">POST /mcp                    MCP JSON-RPC handler (Streamable HTTP)\nPOST /api/mcp/test           { method, params }  GUI test endpoint (5min timeout)\nGET  /api/mcp/info            Server metadata + connection instructions</div>' +
 
       '<h3 style="color:var(--cyan);margin:16px 0 8px;">System</h3>' +
