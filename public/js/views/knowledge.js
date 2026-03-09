@@ -70,8 +70,8 @@ Views.knowledge = {
       '<div class="tab-bar" id="intel-tabs">' +
         '<div class="tab-item active" data-tab="feed">Security Feed</div>' +
         '<div class="tab-item" data-tab="cve-watch">CVE Watch</div>' +
-        '<div class="tab-item" data-tab="briefing">AI Briefing</div>' +
         '<div class="tab-item" data-tab="kev">CISA KEV</div>' +
+        '<div class="tab-item" data-tab="briefing">AI Briefing</div>' +
       '</div>' +
       '<div id="intel-content"></div>';
 
