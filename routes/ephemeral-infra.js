@@ -96,6 +96,32 @@ Respond with valid JSON only:
   });
 
   // ════════════════════════════════════════════════════════════════════════
+  // PROXY POOL & CONFIG EXPORT (fluffy-barnacle enhanced)
+  // ════════════════════════════════════════════════════════════════════════
+
+  // GET /api/proxy-nodes/pool — proxy pool status
+  app.get('/api/proxy-nodes/pool', requireRole('analyst'), (req, res) => {
+    const neuralCache = require('../lib/neural-cache');
+    const cached = neuralCache.get('proxy:pool');
+    if (cached) return res.json(cached);
+    const pool = proxy.getProxyPool();
+    neuralCache.set('proxy:pool', pool, 30000); // 30s TTL
+    res.json(pool);
+  });
+
+  // POST /api/proxy-nodes/pool/config — generate proxy config
+  app.post('/api/proxy-nodes/pool/config', requireRole('analyst'), (req, res) => {
+    const { format } = req.body;
+    if (!format) return res.status(400).json({ error: 'format required (proxychains|curl|env|burp|nmap|nuclei)' });
+    try {
+      const config = proxy.generateProxyConfig(format);
+      res.json(config);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ════════════════════════════════════════════════════════════════════════
   // SSH TUNNELS (pgrok-inspired)
   // ════════════════════════════════════════════════════════════════════════
 
@@ -195,6 +221,55 @@ Respond with valid JSON only:
     tunnelMgr.clearCallbackLog();
     require('../lib/neural-cache').invalidatePrefix('callback:log');
     res.json({ cleared: true });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════
+  // PAYLOAD HOSTING — fluffy-barnacle cs-serve inspired
+  // ════════════════════════════════════════════════════════════════════════
+
+  // GET /api/proxy-nodes/callback/payloads — list hosted payloads
+  app.get('/api/proxy-nodes/callback/payloads', requireRole('analyst'), (req, res) => {
+    const neuralCache = require('../lib/neural-cache');
+    const cached = neuralCache.get('callback:payloads');
+    if (cached) return res.json(cached);
+    const data = tunnelMgr.listPayloads();
+    neuralCache.set('callback:payloads', data, 30000); // 30s TTL
+    res.json(data);
+  });
+
+  // POST /api/proxy-nodes/callback/payloads — add hosted payload
+  app.post('/api/proxy-nodes/callback/payloads', requireRole('analyst'), (req, res) => {
+    const { type, path: payloadPath, content, contentType, target, statusCode, description } = req.body;
+    if (!type || !payloadPath) {
+      return res.status(400).json({ error: 'type and path are required' });
+    }
+    try {
+      const result = tunnelMgr.addPayload({
+        type, path: payloadPath, content, contentType,
+        target, statusCode, description,
+      });
+      require('../lib/neural-cache').invalidate('callback:payloads');
+      if (io) io.emit('callback_update', { action: 'payload_added', payload: result });
+      res.json(result);
+    } catch (e) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  // DELETE /api/proxy-nodes/callback/payloads/:id — remove payload
+  app.delete('/api/proxy-nodes/callback/payloads/:id', requireRole('analyst'), (req, res) => {
+    try {
+      const result = tunnelMgr.removePayload(req.params.id);
+      require('../lib/neural-cache').invalidate('callback:payloads');
+      res.json(result);
+    } catch (e) {
+      res.status(404).json({ error: e.message });
+    }
+  });
+
+  // GET /api/proxy-nodes/callback/ssrf-presets — SSRF redirect presets
+  app.get('/api/proxy-nodes/callback/ssrf-presets', requireRole('analyst'), (req, res) => {
+    res.json(tunnelMgr.getSSRFPresets());
   });
 
   // ════════════════════════════════════════════════════════════════════════

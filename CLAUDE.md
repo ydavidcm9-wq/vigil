@@ -84,7 +84,7 @@ pentest.js             -> Pentest command library + engagement management (Recon
 credentials.js         -> AES-256-GCM credential vault
 notifications.js       -> Notification system (email, webhook, Slack)
 settings.js            -> Platform configuration, user preferences
-mcp.js                 -> MCP server (Streamable HTTP, 36 tools, 7 resources, 8 prompts)
+mcp.js                 -> MCP server (Streamable HTTP, 37 tools, 7 resources, 8 prompts)
 health.js              -> Health check endpoint, service status
 code-audit.js          -> LLM-driven source code vulnerability scanning + binary analysis routes
 ephemeral-infra.js     -> Disposable proxy nodes + SSH tunnels + OOB callback listener (fluffy-barnacle + pgrok inspired)
@@ -192,7 +192,7 @@ public/
 | SSL Monitor | `views/ssl-audit.js` | OpenSSL certificate chain analysis, cipher suite grading |
 | DNS Security | `views/dns-security.js` | DNS security analysis, DNSSEC validation |
 | Code Audit | `views/code-audit.js` | LLM-driven source code vulnerability scanning + Binary Analysis tab |
-| Proxy Nodes | `views/proxy-nodes.js` | Codespace proxies + SSH Tunnels + OOB Callback Listener (3 tabs) |
+| Proxy Nodes | `views/proxy-nodes.js` | Codespace proxies + Proxy Pool + SSH Tunnels + Callback Listener + Payload Hosting (3 tabs) |
 
 ### Intelligence
 | View | File | Description |
@@ -228,7 +228,7 @@ public/
 - Each customer's MCP server is isolated in their own container sandbox -- tenant-scoped, auth-gated.
 - SDK: `@modelcontextprotocol/sdk` + Zod schemas
 
-### Tools (35) — actual names from routes/mcp.js
+### Tools (37) — actual names from routes/mcp.js
 ```
 # System & Posture
 check_posture            -> Security posture score + grade breakdown
@@ -290,6 +290,7 @@ analyze_binary           -> Analyze binary file for malware indicators (filePath
 # SSH Tunnels & Callback (pgrok-inspired)
 create_tunnel            -> Create SSH tunnel (forward/reverse/dynamic, sshTarget, ports)
 manage_callback_listener -> Start/stop/status OOB callback listener for blind vuln detection
+manage_proxy_pool        -> Proxy pool status + config export (proxychains/curl/Burp/nmap/nuclei)
 
 # AI Security (awesome-ai-security inspired)
 check_ai_security        -> AI/LLM security posture assessment (OWASP LLM Top 10, MITRE ATLAS)
@@ -586,6 +587,25 @@ Users bring their own AI subscriptions. The app shells out to locally-installed 
 - API: `GET/POST /api/proxy-nodes/callback`, `GET/DELETE /api/proxy-nodes/callback/log`
 - MCP tool: `manage_callback_listener` (action: start/stop/status, port)
 - Frontend: "Callback Listener" tab in Proxy Nodes view with status panel, captured requests table, detail modal
+
+### Proxy Pool & Config Export (fluffy-barnacle enhanced)
+- Proxy pool management: tracks all active SOCKS5 tunnels with exit IPs
+- Config generation for 6 formats: proxychains.conf, curl, ENV vars, Burp Suite, nmap, nuclei
+- Round-robin proxy chain support for multiple active proxies
+- API: `GET /api/proxy-nodes/pool`, `POST /api/proxy-nodes/pool/config`
+- MCP tool: `manage_proxy_pool` (action: status/config, format: proxychains/curl/env/burp/nmap/nuclei)
+- Neural cache: `proxy:pool` (30s TTL)
+- Frontend: "Proxy Pool & Config Export" card in Proxy Nodes tab with format buttons + copy
+
+### Payload Hosting (fluffy-barnacle cs-serve inspired)
+- Host files or SSRF redirect payloads on the callback listener HTTP server
+- Two types: redirect (302/301/307/308 to target URL) and file (custom content + MIME type)
+- 12 SSRF presets: AWS metadata/IAM/user-data, GCP metadata/token, Azure IMDS/identity, DigitalOcean, K8s API/secrets, Docker socket, Consul
+- Payload requests are served automatically and logged as targeted callbacks
+- Data persisted to `data/hosted-payloads.json`, hit counts tracked per payload
+- API: `GET/POST/DELETE /api/proxy-nodes/callback/payloads`, `GET /api/proxy-nodes/callback/ssrf-presets`
+- Neural cache: `callback:payloads` (30s TTL)
+- Frontend: "Hosted Payloads" section in Callback Listener tab with SSRF Presets modal
 
 ### AI Security Knowledge Base (awesome-ai-security inspired)
 - In-memory knowledge base of AI/ML security threats, frameworks, and defenses

@@ -1,6 +1,6 @@
 /**
  * MCP Server Route — Model Context Protocol (Streamable HTTP)
- * Vigil Security — 36 tools, 7 resources, 8 prompts
+ * Vigil Security — 37 tools, 7 resources, 8 prompts
  *
  * SDK: @modelcontextprotocol/sdk v1.x
  * Transport: Streamable HTTP (stateless, one request = one connection)
@@ -906,6 +906,35 @@ Respond with valid JSON:
       }
     });
 
+    // 35. manage_proxy_pool (fluffy-barnacle enhanced)
+    server.tool('manage_proxy_pool', 'Manage proxy pool — list active SOCKS5 proxies and generate tool configs (proxychains, curl, Burp, nmap, nuclei)', {
+      action: z.enum(['status', 'config']).describe('Action: status (pool info) or config (generate tool config)'),
+      format: z.enum(['proxychains', 'curl', 'env', 'burp', 'nmap', 'nuclei']).default('proxychains').describe('Config format (for action=config)'),
+    }, async ({ action, format }) => {
+      try {
+        const proxyMgr = require('../lib/ephemeral-proxy');
+        if (action === 'status') {
+          const pool = proxyMgr.getProxyPool();
+          let text = `Proxy Pool: ${pool.activeProxies} active / ${pool.totalNodes} total nodes\n\n`;
+          if (pool.proxies.length === 0) {
+            text += 'No active proxies. Create a Codespace node and start a SOCKS5 tunnel first.';
+          } else {
+            text += 'Active Proxies:\n';
+            pool.proxies.forEach((p, i) => {
+              text += `  ${i + 1}. ${p.type}://${p.host}:${p.port}` + (p.exitIP ? ` (exit: ${p.exitIP})` : '') + ` [${p.name}]\n`;
+            });
+          }
+          return { content: [{ type: 'text', text }] };
+        } else {
+          const config = proxyMgr.generateProxyConfig(format);
+          let text = `Format: ${config.format}\n\n${config.config}\n\n${config.instructions}`;
+          return { content: [{ type: 'text', text }] };
+        }
+      } catch (e) {
+        return { content: [{ type: 'text', text: 'Proxy pool error: ' + e.message }], isError: true };
+      }
+    });
+
     // ════════════════════════════════════════════════════════════════════════
     // RESOURCES (7)
     // ════════════════════════════════════════════════════════════════════════
@@ -1140,7 +1169,7 @@ Respond with valid JSON:
       url: mcpUrl,
       transport: 'streamable-http',
       version: '1.0.0',
-      tools: 36,
+      tools: 37,
       resources: 7,
       prompts: 8,
       instructions: {

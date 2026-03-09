@@ -1,5 +1,5 @@
 /* Vigil v1.0 — Proxy Nodes View (Ephemeral Infrastructure)
- * 3 tabs: Proxy Nodes (Codespace SOCKS5) | Tunnels (pgrok-inspired SSH) | Callback Listener (OOB detection)
+ * 3 tabs: Proxy Nodes (Codespace SOCKS5) | Tunnels (pgrok-inspired SSH) | Callback Listener (OOB + Payload Hosting)
  */
 Views['proxy-nodes'] = {
   _status: null,
@@ -8,6 +8,8 @@ Views['proxy-nodes'] = {
   _tunnels: null,
   _callbackStatus: null,
   _callbackLog: [],
+  _payloads: [],
+  _ssrfPresets: [],
 
   init: function() {
     var el = document.getElementById('view-proxy-nodes');
@@ -113,6 +115,27 @@ Views['proxy-nodes'] = {
         '</div>' +
         '<div id="proxy-nodes-list"><div class="loading-state"><div class="spinner"></div></div></div>' +
       '</div>' +
+
+      // Proxy Pool & Config Export (fluffy-barnacle enhanced)
+      '<div class="glass-card" style="margin-bottom:16px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+          '<div style="font-size:var(--font-size-base);font-weight:600;color:var(--text-primary);">Proxy Pool &amp; Config Export</div>' +
+          '<div id="proxy-pool-count" style="font-size:var(--font-size-xs);color:var(--text-tertiary);"></div>' +
+        '</div>' +
+        '<div style="color:var(--text-tertiary);font-size:var(--font-size-xs);margin-bottom:12px;line-height:1.5;">' +
+          'Generate proxy configuration for your security tools. Route scan traffic through active SOCKS5 proxies to rotate exit IPs and avoid attribution during authorized pentests.' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">' +
+          '<button class="btn btn-ghost btn-sm proxy-config-btn" data-format="proxychains" style="font-size:10px;">proxychains.conf</button>' +
+          '<button class="btn btn-ghost btn-sm proxy-config-btn" data-format="curl" style="font-size:10px;">curl</button>' +
+          '<button class="btn btn-ghost btn-sm proxy-config-btn" data-format="env" style="font-size:10px;">ENV vars</button>' +
+          '<button class="btn btn-ghost btn-sm proxy-config-btn" data-format="burp" style="font-size:10px;">Burp Suite</button>' +
+          '<button class="btn btn-ghost btn-sm proxy-config-btn" data-format="nmap" style="font-size:10px;">nmap</button>' +
+          '<button class="btn btn-ghost btn-sm proxy-config-btn" data-format="nuclei" style="font-size:10px;">nuclei</button>' +
+        '</div>' +
+        '<div id="proxy-config-output"></div>' +
+      '</div>' +
+
       '<div class="glass-card">' +
         '<div style="font-size:var(--font-size-base);font-weight:600;color:var(--text-primary);margin-bottom:12px;">AI Infrastructure Planner</div>' +
         '<textarea class="form-input" id="proxy-ai-input" rows="3" placeholder="Describe your engagement..." style="width:100%;resize:vertical;margin-bottom:8px;"></textarea>' +
@@ -124,6 +147,10 @@ Views['proxy-nodes'] = {
     document.getElementById('proxy-sync-btn').addEventListener('click', function() { self._syncNodes(); });
     document.getElementById('proxy-create-btn').addEventListener('click', function() { self._createNode(); });
     document.getElementById('proxy-ai-plan-btn').addEventListener('click', function() { self._aiPlan(); });
+    container.querySelectorAll('.proxy-config-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() { self._generateConfig(btn.getAttribute('data-format')); });
+    });
+    self._loadProxyPool();
   },
 
   _loadProxyNodes: function() {
@@ -261,6 +288,40 @@ Views['proxy-nodes'] = {
     if (plan.recommendations && plan.recommendations.length) { html += '<div style="margin-bottom:8px;"><div style="font-size:var(--font-size-sm);font-weight:600;color:var(--cyan);margin-bottom:4px;">Recommendations</div>'; plan.recommendations.forEach(function(r) { html += '<div style="padding:2px 0;color:var(--text-secondary);font-size:var(--font-size-xs);">&#8226; ' + escapeHtml(r) + '</div>'; }); html += '</div>'; }
     if (plan.risks && plan.risks.length) { html += '<div><div style="font-size:var(--font-size-sm);font-weight:600;color:var(--orange);margin-bottom:4px;">Risks</div>'; plan.risks.forEach(function(r) { html += '<div style="padding:2px 0;color:var(--text-secondary);font-size:var(--font-size-xs);">&#9888; ' + escapeHtml(r) + '</div>'; }); html += '</div>'; }
     return html + '</div>';
+  },
+
+  _loadProxyPool: function() {
+    fetch('/api/proxy-nodes/pool', { credentials: 'same-origin' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var el = document.getElementById('proxy-pool-count');
+        if (el) el.textContent = (data.activeProxies || 0) + ' active prox' + ((data.activeProxies || 0) === 1 ? 'y' : 'ies');
+      }).catch(function() {});
+  },
+
+  _generateConfig: function(format) {
+    var output = document.getElementById('proxy-config-output');
+    if (!output) return;
+    output.innerHTML = '<div class="loading-state" style="padding:8px;"><div class="spinner spinner-sm"></div></div>';
+    fetch('/api/proxy-nodes/pool/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ format: format }) })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.error) { output.innerHTML = '<div style="color:var(--orange);font-size:var(--font-size-xs);">' + escapeHtml(data.error) + '</div>'; return; }
+        if (!data.config) { output.innerHTML = '<div style="color:var(--text-tertiary);font-size:var(--font-size-xs);">' + escapeHtml(data.instructions || 'No active proxies') + '</div>'; return; }
+        output.innerHTML =
+          '<div style="border:1px solid var(--border);border-radius:8px;padding:12px;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+              '<span style="font-size:var(--font-size-xs);font-weight:600;color:var(--cyan);text-transform:uppercase;">' + escapeHtml(format) + '</span>' +
+              '<button class="btn btn-ghost btn-sm" id="proxy-config-copy" style="font-size:10px;">Copy</button>' +
+            '</div>' +
+            '<pre style="background:rgba(0,0,0,0.3);padding:10px;border-radius:4px;font-family:var(--font-mono);font-size:10px;color:var(--text-primary);overflow-x:auto;white-space:pre-wrap;margin-bottom:8px;">' + escapeHtml(data.config) + '</pre>' +
+            '<div style="color:var(--text-tertiary);font-size:10px;line-height:1.5;">' + escapeHtml(data.instructions || '') + '</div>' +
+          '</div>';
+        var copyBtn = document.getElementById('proxy-config-copy');
+        if (copyBtn) copyBtn.addEventListener('click', function() {
+          navigator.clipboard.writeText(data.config).then(function() { Toast.success('Config copied'); });
+        });
+      }).catch(function(e) { output.innerHTML = '<div style="color:var(--orange);font-size:var(--font-size-xs);">' + escapeHtml(e.message) + '</div>'; });
   },
 
   // ════════════════════════════════════════════════════════════════════════
@@ -438,6 +499,22 @@ Views['proxy-nodes'] = {
           '</div>' +
         '</div>' +
         '<div id="cb-log"><div style="color:var(--text-tertiary);font-size:var(--font-size-sm);">No captured requests</div></div>' +
+      '</div>' +
+
+      // Payload Hosting (fluffy-barnacle cs-serve inspired)
+      '<div class="glass-card" style="margin-bottom:16px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+          '<div style="font-size:var(--font-size-base);font-weight:600;color:var(--text-primary);">Hosted Payloads</div>' +
+          '<div style="display:flex;gap:8px;">' +
+            '<button class="btn btn-ghost btn-sm" id="payload-add-btn" style="color:var(--cyan);">+ Add Payload</button>' +
+            '<button class="btn btn-ghost btn-sm" id="payload-ssrf-btn" style="color:var(--orange);">SSRF Presets</button>' +
+          '</div>' +
+        '</div>' +
+        '<div style="color:var(--text-tertiary);font-size:var(--font-size-xs);margin-bottom:12px;line-height:1.5;">' +
+          'Host files or SSRF redirect payloads on the callback listener. Requests to hosted paths are served automatically and logged. ' +
+          'Use SSRF presets to quickly create 302 redirects targeting cloud metadata endpoints (AWS/GCP/Azure).' +
+        '</div>' +
+        '<div id="payload-list"><div style="color:var(--text-tertiary);font-size:var(--font-size-sm);">No hosted payloads</div></div>' +
       '</div>';
 
     var self = this;
@@ -446,6 +523,8 @@ Views['proxy-nodes'] = {
     document.getElementById('cb-refresh-log').addEventListener('click', function() { self._loadCallbackLog(); });
     document.getElementById('cb-clear-log').addEventListener('click', function() { self._clearCallbackLog(); });
     document.getElementById('cb-targeted-only').addEventListener('change', function() { self._loadCallbackLog(); });
+    document.getElementById('payload-add-btn').addEventListener('click', function() { self._addPayloadModal(); });
+    document.getElementById('payload-ssrf-btn').addEventListener('click', function() { self._ssrfPresetsModal(); });
   },
 
   _loadCallback: function() {
@@ -465,6 +544,7 @@ Views['proxy-nodes'] = {
         self._renderCallbackStatus(data);
       }).catch(function() {});
     self._loadCallbackLog();
+    self._loadPayloads();
   },
 
   _renderCallbackStatus: function(data) {
@@ -598,6 +678,139 @@ Views['proxy-nodes'] = {
     var self = this;
     fetch('/api/proxy-nodes/callback/log', { method: 'DELETE', credentials: 'same-origin' })
       .then(function(r) { return r.json(); }).then(function() { Toast.success('Log cleared'); self._loadCallbackLog(); })
+      .catch(function(e) { Toast.error(e.message); });
+  },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // PAYLOAD HOSTING (fluffy-barnacle cs-serve inspired)
+  // ════════════════════════════════════════════════════════════════════════
+
+  _loadPayloads: function() {
+    var self = this;
+    fetch('/api/proxy-nodes/callback/payloads', { credentials: 'same-origin' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        self._payloads = data.payloads || [];
+        self._renderPayloads();
+      }).catch(function() {});
+  },
+
+  _renderPayloads: function() {
+    var el = document.getElementById('payload-list');
+    if (!el) return;
+    var payloads = this._payloads;
+    if (!payloads || payloads.length === 0) {
+      el.innerHTML = '<div style="color:var(--text-tertiary);font-size:var(--font-size-sm);padding:8px 0;">No hosted payloads</div>';
+      return;
+    }
+    var html = '<table class="data-table" style="font-size:var(--font-size-xs);"><thead><tr><th>Type</th><th>Path</th><th>Target / Content</th><th>Hits</th><th></th></tr></thead><tbody>';
+    payloads.forEach(function(p) {
+      var typeColor = p.type === 'redirect' ? 'var(--orange)' : 'var(--cyan)';
+      var detail = p.type === 'redirect' ? escapeHtml((p.target || '').substring(0, 60)) : escapeHtml((p.contentType || 'text/html') + ' (' + ((p.content || '').length || 0) + ' bytes)');
+      html += '<tr>' +
+        '<td><span class="tag" style="color:' + typeColor + ';font-weight:600;">' + escapeHtml(p.type) + '</span></td>' +
+        '<td style="font-family:var(--font-mono);color:var(--cyan);">' + escapeHtml(p.path) + '</td>' +
+        '<td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-secondary);" title="' + escapeHtml(p.description || p.target || '') + '">' + detail + '</td>' +
+        '<td style="text-align:center;">' + (p.hitCount || 0) + '</td>' +
+        '<td><button class="btn btn-ghost btn-sm payload-delete" data-id="' + escapeHtml(p.id) + '" style="color:var(--orange);font-size:10px;">Remove</button></td>' +
+      '</tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+    var self = this;
+    el.querySelectorAll('.payload-delete').forEach(function(btn) {
+      btn.addEventListener('click', function() { self._removePayload(btn.getAttribute('data-id')); });
+    });
+  },
+
+  _addPayloadModal: function() {
+    var self = this;
+    Modal.open({ title: 'Add Hosted Payload', body:
+      '<div class="form-group"><label class="form-label">Type</label>' +
+        '<select class="form-select" id="payload-type"><option value="redirect">Redirect (302) — SSRF testing</option><option value="file">File — serve custom content</option></select></div>' +
+      '<div class="form-group"><label class="form-label">URL Path <span style="color:var(--orange);">*</span></label><input type="text" class="form-input" id="payload-path" placeholder="/ssrf-test" value="/payload-' + Date.now().toString(36) + '"></div>' +
+      '<div id="payload-redirect-fields">' +
+        '<div class="form-group"><label class="form-label">Redirect Target URL <span style="color:var(--orange);">*</span></label><input type="text" class="form-input" id="payload-target" placeholder="http://169.254.169.254/latest/meta-data/"></div>' +
+        '<div class="form-group"><label class="form-label">Status Code</label><select class="form-select" id="payload-status"><option value="302">302 Found</option><option value="301">301 Moved</option><option value="307">307 Temporary</option><option value="308">308 Permanent</option></select></div>' +
+      '</div>' +
+      '<div id="payload-file-fields" style="display:none;">' +
+        '<div class="form-group"><label class="form-label">Content Type</label><input type="text" class="form-input" id="payload-content-type" value="text/html"></div>' +
+        '<div class="form-group"><label class="form-label">Content <span style="color:var(--orange);">*</span></label><textarea class="form-input" id="payload-content" rows="5" placeholder="<html><body>payload</body></html>" style="width:100%;resize:vertical;font-family:var(--font-mono);font-size:var(--font-size-xs);"></textarea></div>' +
+      '</div>' +
+      '<div class="form-group"><label class="form-label">Description</label><input type="text" class="form-input" id="payload-desc" placeholder="Optional description"></div>',
+      footer: '<button class="btn btn-ghost" onclick="Modal.close()">Cancel</button><button class="btn btn-primary" id="payload-create-go">Add Payload</button>',
+      size: 'lg' });
+
+    document.getElementById('payload-type').addEventListener('change', function() {
+      document.getElementById('payload-redirect-fields').style.display = this.value === 'redirect' ? '' : 'none';
+      document.getElementById('payload-file-fields').style.display = this.value === 'file' ? '' : 'none';
+    });
+
+    document.getElementById('payload-create-go').addEventListener('click', function() {
+      var type = document.getElementById('payload-type').value;
+      var payloadPath = document.getElementById('payload-path').value.trim();
+      if (!payloadPath) { Toast.warning('Path required'); return; }
+      var body = { type: type, path: payloadPath, description: document.getElementById('payload-desc').value.trim() };
+      if (type === 'redirect') {
+        body.target = document.getElementById('payload-target').value.trim();
+        body.statusCode = parseInt(document.getElementById('payload-status').value);
+        if (!body.target) { Toast.warning('Redirect target required'); return; }
+      } else {
+        body.content = document.getElementById('payload-content').value;
+        body.contentType = document.getElementById('payload-content-type').value.trim() || 'text/html';
+        if (!body.content) { Toast.warning('Content required'); return; }
+      }
+      fetch('/api/proxy-nodes/callback/payloads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify(body) })
+        .then(function(r) { return r.json(); }).then(function(d) {
+          Modal.close();
+          if (d.error) Toast.error(d.error);
+          else { Toast.success('Payload added at ' + d.path); self._loadPayloads(); }
+        }).catch(function(e) { Toast.error(e.message); });
+    });
+  },
+
+  _ssrfPresetsModal: function() {
+    var self = this;
+    fetch('/api/proxy-nodes/callback/ssrf-presets', { credentials: 'same-origin' })
+      .then(function(r) { return r.json(); })
+      .then(function(presets) {
+        self._ssrfPresets = presets;
+        var html = '<div style="color:var(--text-tertiary);font-size:var(--font-size-xs);margin-bottom:12px;">Click a preset to create a 302 redirect payload targeting that endpoint. The callback listener will serve the redirect and log the hit.</div>';
+        html += '<div style="max-height:400px;overflow-y:auto;">';
+        presets.forEach(function(p, i) {
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid var(--border);">' +
+            '<div style="flex:1;min-width:0;">' +
+              '<div style="font-size:var(--font-size-xs);font-weight:600;color:var(--text-primary);">' + escapeHtml(p.name) + '</div>' +
+              '<div style="font-size:10px;color:var(--text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escapeHtml(p.target) + '">' + escapeHtml(p.target) + '</div>' +
+              '<div style="font-size:10px;color:var(--text-secondary);">' + escapeHtml(p.description) + '</div>' +
+            '</div>' +
+            '<button class="btn btn-ghost btn-sm ssrf-preset-add" data-idx="' + i + '" style="color:var(--cyan);font-size:10px;flex-shrink:0;margin-left:8px;">Deploy</button>' +
+          '</div>';
+        });
+        html += '</div>';
+        Modal.open({ title: 'SSRF Redirect Presets', body: html, size: 'lg' });
+        document.querySelectorAll('.ssrf-preset-add').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var idx = parseInt(btn.getAttribute('data-idx'));
+            var preset = self._ssrfPresets[idx];
+            if (!preset) return;
+            var slug = preset.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 30);
+            btn.disabled = true; btn.textContent = 'Deploying...';
+            fetch('/api/proxy-nodes/callback/payloads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+              body: JSON.stringify({ type: 'redirect', path: '/ssrf/' + slug, target: preset.target, statusCode: 302, description: preset.name + ': ' + preset.description }) })
+              .then(function(r) { return r.json(); }).then(function(d) {
+                if (d.error) { Toast.error(d.error); btn.disabled = false; btn.textContent = 'Deploy'; }
+                else { Toast.success('Deployed: ' + d.path); btn.textContent = 'Deployed'; btn.style.color = 'var(--text-tertiary)'; self._loadPayloads(); }
+              }).catch(function() { btn.disabled = false; btn.textContent = 'Deploy'; });
+          });
+        });
+      }).catch(function(e) { Toast.error(e.message); });
+  },
+
+  _removePayload: function(id) {
+    var self = this;
+    fetch('/api/proxy-nodes/callback/payloads/' + encodeURIComponent(id), { method: 'DELETE', credentials: 'same-origin' })
+      .then(function(r) { return r.json(); }).then(function(d) { if (d.error) Toast.error(d.error); else { Toast.success('Payload removed'); self._loadPayloads(); } })
       .catch(function(e) { Toast.error(e.message); });
   }
 };
