@@ -84,7 +84,7 @@ Views.docs = {
       '<h3 style="color:var(--text-primary);font-size:var(--font-size-lg);margin:16px 0 8px;">BYOK AI Model</h3>' +
       '<p>Vigil uses a <strong>Bring Your Own Key</strong> model. All AI features shell out to locally-installed CLI tools (Claude CLI, Claude Code, Codex CLI). There is zero AI cost to the product itself &mdash; you use your own subscription. Without an AI CLI configured, all views still work but AI-powered features (triage, hunting, playbooks, analysis) degrade gracefully with placeholder messages.</p>' +
       '<h3 style="color:var(--text-primary);font-size:var(--font-size-lg);margin:16px 0 8px;">Architecture</h3>' +
-      '<p>Express.js + Socket.IO with a vanilla JS frontend. No React, no build step, no bundler. 25 route modules, 17 libs, 30+ views, 200+ API endpoints, only 6 npm dependencies. Data stored in JSON files under <code style="background:var(--well);padding:1px 4px;border-radius:3px;">data/</code> &mdash; works without any database. Optional PostgreSQL for production.</p>' +
+      '<p>Express.js + Socket.IO with a vanilla JS frontend. No React, no build step, no bundler. ~35 route modules, ~27 libs, 37 views, 200+ API endpoints, only 6 npm dependencies. Data stored in JSON files under <code style="background:var(--well);padding:1px 4px;border-radius:3px;">data/</code> &mdash; works without any database. Optional PostgreSQL for production.</p>' +
       '<h3 style="color:var(--text-primary);font-size:var(--font-size-lg);margin:16px 0 8px;">RBAC Roles</h3>' +
       '<table class="data-table"><thead><tr><th>Role</th><th>Level</th><th>Permissions</th></tr></thead><tbody>' +
         '<tr><td style="color:var(--text-primary);">Admin</td><td>3</td><td>Full access: user management, settings, delete operations, all views</td></tr>' +
@@ -143,7 +143,23 @@ Views.docs = {
       '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">FAQ:</p>' +
       '<p><strong>Q: Where does timeline data come from?</strong><br>A: It aggregates from 9 data sources: findings, scans, threats, alerts, incidents, hunts, OSINT lookups, audit log (auth events), and agent runs. Every action across the platform feeds into this timeline.</p>' +
       '<p><strong>Q: What does AI Analysis do?</strong><br>A: It reads all events in the current view and generates a narrative identifying attack patterns, correlating events, and assessing risk progression. Useful for incident response &mdash; "what happened in the last 24 hours?"</p>' +
-      '<p><strong>Q: Can I export the timeline?</strong><br>A: Not directly from the UI yet, but the raw data is available via <code style="background:var(--well);padding:1px 4px;border-radius:3px;">GET /api/timeline?range=24h</code>.</p>',
+      '<p><strong>Q: Can I export the timeline?</strong><br>A: Not directly from the UI yet, but the raw data is available via <code style="background:var(--well);padding:1px 4px;border-radius:3px;">GET /api/timeline?range=24h</code>.</p>' +
+
+      /* Intel Hub */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Intel Hub</h3>' +
+      '<p>Security intelligence aggregator with 5 tabs: Security Feed, CVE Watch, CISA KEV, AI Briefing, and AI Threats. Replaces the old Knowledge Base view. Pulls from 15 RSS/Atom security feeds, NVD CVE API, and CISA KEV catalog.</p>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Tabs:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Security Feed</strong> &mdash; Aggregates 15 security RSS feeds (CISA, SANS ISC, Krebs, BleepingComputer, Hacker News, Schneier, Exploit-DB, Talos, Rapid7, Dark Reading, ESET, SecurityWeek, CVE Feed). Click any article for full details in a modal. Auto-refreshes every 15 minutes.</li>' +
+        '<li><strong>CVE Watch</strong> &mdash; NVD CVE API 2.0 search. Enter keywords to search the National Vulnerability Database. Shows CVSS scores, severity, description, and references. Add CVEs to your watchlist for monitoring.</li>' +
+        '<li><strong>CISA KEV</strong> &mdash; CISA Known Exploited Vulnerabilities catalog. Table with CVE ID, vendor, product, vulnerability name, date added, due date, and required action. Click any row for full details modal.</li>' +
+        '<li><strong>AI Briefing</strong> &mdash; AI-generated daily threat briefing analyzing the latest 50 feed items. Produces: executive summary, critical items, emerging threats, vulnerability highlights, and recommended actions. Takes ~30-60 seconds to generate.</li>' +
+        '<li><strong>AI Threats</strong> &mdash; AI Security Knowledge Base with 5 sub-categories: OWASP LLM Top 10, MITRE ATLAS (15 adversarial ML techniques), Prompt Injection Patterns (8 types), AI Vulnerability Types (8 classes), and Defensive Tools (12 tools). Click any entry for detail modal with descriptions, attack examples, mitigations, and CWE/ATT&amp;CK references. AI analysis button for deeper assessment.</li>' +
+      '</ul>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">FAQ:</p>' +
+      '<p><strong>Q: How often are feeds updated?</strong><br>A: Every 15 minutes via background refresh + initial fetch 30 seconds after startup. NVD CVE API is rate-limited (7 seconds between requests).</p>' +
+      '<p><strong>Q: Why do some feeds show errors?</strong><br>A: Some feeds (Packet Storm, Sophos) occasionally block server-side requests. 13/15 feeds consistently return results. Failed feeds are silently skipped.</p>' +
+      '<p><strong>Q: What is the AI Threats tab for?</strong><br>A: It provides an in-memory knowledge base of AI/ML-specific security threats. Useful for teams building or deploying LLM applications. The OWASP LLM Top 10 is also available as a 4th compliance framework in the Compliance view.</p>',
 
 
     /* ===== INTELLIGENCE & HUNTING ===== */
@@ -435,17 +451,17 @@ Views.docs = {
 
       /* Security Agents */
       '<h3 style="color:var(--cyan);margin:20px 0 8px;font-size:var(--font-size-lg);">Security Agents</h3>' +
-      '<p>24 built-in AI security agents, each a specialist with a focused system prompt. Includes 5 Raptor-inspired adversarial agents with MUST-GATE reasoning. Create unlimited custom agents. Run them against any target with natural language input.</p>' +
+      '<p>27 built-in AI security agents, each a specialist with a focused system prompt. Includes 5 Raptor-inspired adversarial agents with MUST-GATE reasoning, plus AI Threat Analyst, Prompt Injection Tester, and Autonomous Pentester. Create unlimited custom agents. Run them against any target with natural language input.</p>' +
       '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/SecurityAgents.png" alt="Vigil Security Agents" style="width:100%;display:block;" loading="lazy"></div>' +
 
       '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">What you see:</p>' +
       '<ul style="padding-left:20px;list-style:disc;">' +
-        '<li><strong>Stats Bar</strong> &mdash; Total Agents (24), Scanners (6), Analyzers (6), Total Runs (cumulative). Animated counters.</li>' +
+        '<li><strong>Stats Bar</strong> &mdash; Total Agents (27), Scanners (6), Analyzers (6), Total Runs (cumulative). Animated counters.</li>' +
         '<li><strong>Category Tabs</strong> &mdash; All, Scanners, Analyzers, Defenders, Hunters, Custom. Filter the grid.</li>' +
         '<li><strong>Agent Cards Grid</strong> &mdash; 3-column layout. Each card shows: category icon, agent name, category tag (colored), risk level (low/medium/high), run count, description, orange "Run Agent" button.</li>' +
       '</ul>' +
 
-      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Built-in Agents (24):</p>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Built-in Agents (27):</p>' +
       '<table class="data-table" style="font-size:var(--font-size-xs);"><thead><tr><th>Agent</th><th>Category</th><th>Risk</th><th>What It Does</th></tr></thead><tbody>' +
         '<tr><td>Port Scanner</td><td>Scanner</td><td>Low</td><td>Analyzes open ports, services, and network attack surface</td></tr>' +
         '<tr><td>Subdomain Enumerator</td><td>Scanner</td><td>Low</td><td>Discovers subdomains and maps external attack surface</td></tr>' +
@@ -457,7 +473,7 @@ Views.docs = {
         '<tr><td>IAM Policy Analyzer</td><td>Analyzer</td><td>Low</td><td>Identifies over-privileged access, unused permissions, and IAM risks</td></tr>' +
         '<tr><td>PCI DSS Checker</td><td>Analyzer</td><td>Low</td><td>Evaluates PCI DSS v4.0 payment security requirements</td></tr>' +
       '</tbody></table>' +
-      '<p style="color:var(--text-tertiary);font-size:var(--font-size-xs);margin-top:4px;">Plus 15 more: HIPAA Checker, Data Classifier, Password Auditor, Incident Playbook, Firewall Auditor, Malware Analyzer, Log Hunter, Network Anomaly, Memory Forensics, Disk Forensics, and 5 Raptor adversarial agents (Adversarial Analyst, Exploit Validator, Attack Path Mapper, Patch Reviewer, Red Team Planner).</p>' +
+      '<p style="color:var(--text-tertiary);font-size:var(--font-size-xs);margin-top:4px;">Plus 18 more: HIPAA Checker, Data Classifier, Password Auditor, Incident Playbook, Firewall Auditor, Malware Analyzer, Log Hunter, Network Anomaly, Memory Forensics, Disk Forensics, 5 Raptor adversarial agents (Adversarial Analyst, Exploit Validator, Attack Path Mapper, Patch Reviewer, Red Team Planner), AI Threat Analyst (OWASP LLM/MITRE ATLAS mapping), Prompt Injection Tester (8 PI vectors), and Autonomous Pentester (P-E-R engine).</p>' +
 
       '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Running an Agent:</p>' +
       '<ol style="padding-left:20px;list-style:decimal;">' +
@@ -596,7 +612,37 @@ Views.docs = {
       '<p><strong>Q: What tools are required?</strong><br>A: All tools (nmap, dig, whois, openssl, nuclei, nikto, traceroute) are pre-installed in the Docker container. No additional setup needed.</p>' +
       '<p><strong>Q: Can I browse commands without a project?</strong><br>A: Yes. The <strong>Command Library</strong> tab shows all 18 commands with phase filter and search. Click any command to see its parameters and execute it.</p>' +
       '<p><strong>Q: How does command execution work?</strong><br>A: Commands run in the Docker container using <code style="background:var(--well);padding:1px 4px;border-radius:3px;">execFileSafe()</code> (no shell injection). Parameters are validated against a safe character regex. Output is parsed to extract findings (open ports, vulnerabilities, etc.). Results are saved to the project and appear in the phase tabs.</p>' +
-      '<p><strong>Q: Does the AI pentest report require AI?</strong><br>A: Yes. The report uses your configured AI provider to generate a professional penetration test report from project data (target, scope, commands executed, findings). Takes ~30-60 seconds. Without AI, use the raw execution data as your report basis.</p>',
+      '<p><strong>Q: Does the AI pentest report require AI?</strong><br>A: Yes. The report uses your configured AI provider to generate a professional penetration test report from project data (target, scope, commands executed, findings). Takes ~30-60 seconds. Without AI, use the raw execution data as your report basis.</p>' +
+
+      /* Autonomous Pentest (P-E-R Engine) */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Autonomous Pentest (P-E-R Engine)</h3>' +
+      '<p>AI-driven autonomous penetration testing with a Planner-Executor-Reflector cycle and dual causal graph reasoning. Inspired by <a href="https://github.com/LuaN1aoAgent" style="color:var(--cyan);">LuaN1aoAgent</a>. The engine decomposes targets into task DAGs, executes commands, and builds evidence chains to confirm or refute vulnerability hypotheses.</p>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">How it works:</p>' +
+      '<ol style="padding-left:20px;">' +
+        '<li><strong>Planner</strong> &mdash; AI decomposes the target into a Task Graph (DAG) of subtasks with dependencies and priorities. Tools: nmap, nuclei, nikto, dig, whois, openssl, curl.</li>' +
+        '<li><strong>Executor</strong> &mdash; Runs commands via <code style="background:var(--well);padding:1px 4px;border-radius:3px;">execFileSafe()</code>, parses output, proposes causal nodes (evidence, hypotheses, vulnerabilities) for the Causal Graph.</li>' +
+        '<li><strong>Reflector</strong> &mdash; Audits executor output, validates causal nodes before committing, performs failure attribution (L0-L5), and decides whether to continue or halt.</li>' +
+        '<li><strong>Replanner</strong> &mdash; Adapts the task graph based on reflector feedback, adding new tasks or adjusting priorities.</li>' +
+      '</ol>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Depth Modes:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Quick</strong> &mdash; 3 P-E-R cycles, fast reconnaissance</li>' +
+        '<li><strong>Standard</strong> &mdash; 5 cycles, balanced assessment</li>' +
+        '<li><strong>Deep</strong> &mdash; 8 cycles, thorough testing with extended analysis</li>' +
+      '</ul>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">How to use:</p>' +
+      '<ol style="padding-left:20px;">' +
+        '<li>Navigate to <strong>Agents &gt; Pentest</strong></li>' +
+        '<li>Click the <strong>Autonomous</strong> tab</li>' +
+        '<li>Click <strong>Launch Autonomous Pentest</strong></li>' +
+        '<li>Enter target (URL, hostname, or IP), scope constraints, and depth</li>' +
+        '<li>Monitor real-time progress: cycle count, task completion, evidence count, findings</li>' +
+        '<li>When complete, click the result card for detailed view: task graph stats, causal graph stats, findings with severity, key facts, and AI-generated summary report</li>' +
+      '</ol>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">FAQ:</p>' +
+      '<p><strong>Q: What is the dual causal graph?</strong><br>A: Two graphs work together. The <strong>Task Graph</strong> is a DAG of subtasks (nmap scan, DNS lookup, etc.) with dependencies. The <strong>Causal Graph</strong> tracks evidence chains: Evidence &rarr; Hypothesis &rarr; Possible Vulnerability &rarr; Confirmed Vulnerability. Confidence propagates through the graph using logit/sigmoid updates.</p>' +
+      '<p><strong>Q: What is L0-L5 failure attribution?</strong><br>A: When a task fails, the Reflector categorizes it: L0 (raw error), L1 (tool failure), L2 (missing prerequisite), L3 (environmental issue), L4 (hypothesis falsified by evidence), L5 (strategy-level problem requiring replanning).</p>' +
+      '<p><strong>Q: How long does a scan take?</strong><br>A: Quick depth: ~1-3 minutes. Standard: ~3-8 minutes. Deep: ~8-15 minutes. Depends on target complexity and number of open services discovered.</p>',
 
 
     /* ===== INCIDENTS & PLAYBOOKS ===== */
@@ -648,11 +694,12 @@ Views.docs = {
         '<tr><td style="color:var(--text-primary);">SOC 2 Type II</td><td>14 (CC1&ndash;CC9)</td><td>Auth, access control, firewall, encryption, logging, monitoring, scanning, threat detection, incident response, change mgmt</td></tr>' +
         '<tr><td style="color:var(--text-primary);">ISO 27001:2022</td><td>15 (A.5&ndash;A.8)</td><td>Same as SOC 2 plus malware detection, secure coding, physical/endpoint (manual)</td></tr>' +
         '<tr><td style="color:var(--text-primary);">NIST 800-53 Rev. 5</td><td>15 (AC,AT,AU,CA,CM,IA,IR,RA,SC,SI)</td><td>Account management, access enforcement, event logging, audit review, security assessments, baseline config, authenticator mgmt, incident handling, vulnerability monitoring, boundary protection, flaw remediation</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">OWASP LLM Top 10</td><td>10 (LLM01&ndash;LLM10)</td><td>Prompt injection detection, output sanitization, data poisoning, model DoS, supply chain, sensitive info disclosure, insecure plugins, excessive agency, overreliance, model theft. Baseline checks: AI provider config + output handling.</td></tr>' +
       '</tbody></table>' +
 
       '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">What you see:</p>' +
       '<ul style="padding-left:20px;list-style:disc;">' +
-        '<li><strong>Framework Tabs</strong> &mdash; SOC 2, ISO 27001, NIST 800-53. Click to switch between frameworks.</li>' +
+        '<li><strong>Framework Tabs</strong> &mdash; SOC 2, ISO 27001, NIST 800-53, OWASP LLM Top 10. Click to switch between frameworks.</li>' +
         '<li><strong>Stats Cards</strong> &mdash; Overall Compliance % (excludes N/A controls), Pass count (cyan), Fail count (orange), Partial count.</li>' +
         '<li><strong>Controls Table</strong> &mdash; ID, Control name, Check detail (what was tested), Status badge (Pass=cyan, Fail=orange, Partial=purple, N/A=info), Evidence button.</li>' +
         '<li><strong>Generate Report</strong> &mdash; AI-powered full audit report shown in a modal with executive summary, key findings, gap analysis, remediation roadmap, and compliance readiness.</li>' +
@@ -723,11 +770,14 @@ Views.docs = {
       '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Domain Intel Tab:</p>' +
       '<ul style="padding-left:20px;list-style:disc;">' +
         '<li><strong>AI Security Assessment</strong> &mdash; Top-level narrative analyzing the domain\'s security posture, risks, and recommendations. 6-8 sentences.</li>' +
-        '<li><strong>Stats Cards</strong> &mdash; Subdomains found, Certificates discovered, Technologies detected, Missing security headers.</li>' +
+        '<li><strong>Stats Cards</strong> &mdash; Subdomains found, Certificates discovered, Technologies detected, Missing security headers, Reputation score (0-100), Shared Hosts count.</li>' +
         '<li><strong>WHOIS Data</strong> &mdash; Registrar, creation/expiry dates, registrant, nameservers, status codes.</li>' +
         '<li><strong>SSL Certificate</strong> &mdash; CN, Issuer, Valid From/To, Protocol (TLS 1.3), SAN count.</li>' +
         '<li><strong>Technologies Detected</strong> &mdash; Tags showing discovered tech (CloudFlare, OpenSSL, etc.).</li>' +
         '<li><strong>HTTP Security Headers</strong> &mdash; Table checking 7 headers (HSTS, CSP, X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy) with Present (cyan) / Missing (orange) status and values.</li>' +
+        '<li><strong>Reverse IP Lookup</strong> &mdash; (WebOSINT) All domains sharing the same IP address, shown as a tag cloud. Uses HackerTarget free API (no key needed). Helps identify shared hosting and co-located targets.</li>' +
+        '<li><strong>Domain Reputation</strong> &mdash; (WebOSINT) Score out of 100 with individual test results (malware, phishing, spam). Requires WhoisXML API key stored in credential vault as <code style="background:var(--well);padding:1px 4px;border-radius:3px;">whoisxml_api_key</code> (500 free lookups). Shows helpful message when not configured.</li>' +
+        '<li><strong>WHOIS History</strong> &mdash; (WebOSINT) Historical ownership table showing registrar, registrant org, creation date, and expiry across time. Requires WhoisFreaks API key stored as <code style="background:var(--well);padding:1px 4px;border-radius:3px;">whoisfreaks_api_key</code> (100 free).</li>' +
         '<li><strong>Subdomains</strong> &mdash; Discovered subdomains as tags.</li>' +
         '<li><strong>Certificates</strong> &mdash; CT log results table: CN, Issuer, Valid Until (top 25).</li>' +
         '<li><strong>DNS Records</strong> &mdash; MX, A, AAAA, TXT records grouped by type.</li>' +
@@ -735,7 +785,8 @@ Views.docs = {
 
       '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">IP Lookup Tab:</p>' +
       '<ul style="padding-left:20px;list-style:disc;">' +
-        '<li><strong>Geolocation</strong> &mdash; Country, region, city, timezone, coordinates.</li>' +
+        '<li><strong>Dual-Source Geolocation</strong> &mdash; (WebOSINT) Cross-verifies location from ip-api.com and ipinfo.io. Shows VERIFIED badge (cyan) when both sources agree or MISMATCH badge (orange) when they disagree. Displays country, region, city, ISP, and org from both sources.</li>' +
+        '<li><strong>Reverse IP Lookup</strong> &mdash; (WebOSINT) All domains hosted on the same IP, shown as a tag cloud. Same HackerTarget API as Domain Intel tab.</li>' +
         '<li><strong>Network Info</strong> &mdash; ISP, Organization, ASN, AS Name, Reverse DNS.</li>' +
         '<li><strong>Port Scan</strong> &mdash; Scans 10 common ports (22, 80, 443, 8080, 3389, 3306, 5432, 6379, 27017, 8443) with service identification.</li>' +
         '<li><strong>AI Security Assessment</strong> &mdash; Risk analysis based on open ports, geolocation, and network data.</li>' +
@@ -816,25 +867,25 @@ Views.docs = {
 
       /* MCP Playground */
       '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">MCP Playground</h3>' +
-      '<p>Interactive testing interface for Vigil\'s built-in MCP (Model Context Protocol) server. Test all 24 tools, browse 6 resources, run 7 AI prompt workflows, and connect external AI assistants.</p>' +
+      '<p>Interactive testing interface for Vigil\'s built-in MCP (Model Context Protocol) server. Test all 35 tools, browse 7 resources, run 8 AI prompt workflows, and connect external AI assistants.</p>' +
       '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/MCP_Playground.png" alt="Vigil MCP Playground" style="width:100%;display:block;" loading="lazy"></div>' +
 
       '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">5 Zones:</p>' +
       '<ol style="padding-left:20px;list-style:decimal;">' +
-        '<li style="margin-bottom:6px;"><strong>Stats Bar</strong> &mdash; Tools (33), Resources (7), Prompts (8), MCP Calls counter.</li>' +
-        '<li style="margin-bottom:6px;"><strong>AI Security Workflows</strong> &mdash; 4 clickable prompt cards: Security Audit (Multi-Tool), Threat Briefing (Daily), Incident Response (Interactive), Compliance Report (SOC2/ISO/NIST). Click to run the workflow with optional parameters. 3 additional prompts available via tool explorer: Code Security Review, WAF Reconnaissance, Anonymous Pentest Setup.</li>' +
-        '<li style="margin-bottom:6px;"><strong>Live Security Data</strong> &mdash; 3 MCP resource cards showing real-time data: Security Posture (score + grade from vigil://posture), Active Threats (count + critical badge + top 3 threats from vigil://threats), Open Findings (count + severity breakdown from vigil://findings). 3 additional resources: vigil://code-audit-findings, vigil://waf-signatures, vigil://proxy-nodes.</li>' +
-        '<li style="margin-bottom:6px;"><strong>Tool Explorer</strong> &mdash; Two-panel layout. Left: search bar + category tabs (Scanning/Intelligence/Compliance/Incident/System/Code Audit/Proxy/Adversarial) + tool list. Right: selected tool with description, auto-generated parameter form, Execute button, smart result rendering.</li>' +
+        '<li style="margin-bottom:6px;"><strong>Stats Bar</strong> &mdash; Tools (35), Resources (7), Prompts (8), MCP Calls counter.</li>' +
+        '<li style="margin-bottom:6px;"><strong>AI Security Workflows</strong> &mdash; 4 clickable prompt cards: Security Audit (Multi-Tool), Threat Briefing (Daily), Incident Response (Interactive), Compliance Report (SOC2/ISO/NIST). Click to run the workflow with optional parameters. 4 additional prompts available via tool explorer: Code Security Review, WAF Reconnaissance, Anonymous Pentest Setup, AI Security Review.</li>' +
+        '<li style="margin-bottom:6px;"><strong>Live Security Data</strong> &mdash; 3 MCP resource cards showing real-time data: Security Posture (score + grade from vigil://posture), Active Threats (count + critical badge + top 3 threats from vigil://threats), Open Findings (count + severity breakdown from vigil://findings). 4 additional resources: vigil://code-audit-findings, vigil://waf-signatures, vigil://proxy-nodes, vigil://ai-security-kb.</li>' +
+        '<li style="margin-bottom:6px;"><strong>Tool Explorer</strong> &mdash; Two-panel layout. Left: search bar + 12 category tabs (All/Scanning/Intelligence/Compliance/Incident/System/Code Audit/Proxy/Adversarial/Pentest/Purple Team/AI Security) + tool list. Right: selected tool with description, auto-generated parameter form, Execute button, smart result rendering.</li>' +
         '<li style="margin-bottom:6px;"><strong>Request Log</strong> &mdash; Last 20 MCP calls with timestamp, status dot (cyan=success, orange=error), method, params, duration in ms.</li>' +
       '</ol>' +
 
-      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">33 MCP Tools:</p>' +
-      '<div class="code-block" style="margin-bottom:8px;font-size:11px;">check_posture         &mdash; Security posture score + breakdown\nscan_ports            &mdash; Nmap port scan (target, ports)\nscan_vulnerabilities  &mdash; Nuclei scan (target, severity)\ncheck_ssl             &mdash; SSL certificate check (domain)\nquery_logs            &mdash; Natural language log search\nosint_domain          &mdash; Domain DNS recon\nosint_ip              &mdash; IP geolocation lookup\ntriage_alert          &mdash; AI alert triage (title, details, severity)\nhunt_threat           &mdash; Threat hypothesis investigation\nrun_agent             &mdash; Execute security agent (slug, input)\nlaunch_campaign       &mdash; Multi-agent campaign (goal, maxAgents)\ngenerate_report       &mdash; Report generation (type)\ncompliance_check      &mdash; Framework compliance check\nlist_findings         &mdash; Get vulnerability findings\nincident_create       &mdash; Create security incident\nrun_code_audit        &mdash; AI code vulnerability scan (target, languages)\nget_code_audit_results&mdash; Get code audit findings (scanId)\ndetect_waf            &mdash; WAF/CDN fingerprinting (target, probeMode)\nlist_proxy_nodes      &mdash; List ephemeral proxy nodes\ncreate_proxy_node     &mdash; Create disposable Codespace proxy\nstart_proxy_tunnel    &mdash; Start SOCKS5 tunnel through proxy\nplan_proxy_infrastructure &mdash; AI proxy infrastructure planning\nvalidate_exploitability &mdash; MUST-GATE exploitability validation (Raptor)\nadversarial_analysis  &mdash; Deep adversarial security analysis (Raptor)\nrun_pentest_command   &mdash; Execute pentest command (commandId, params)\nget_pentest_results   &mdash; Get pentest project findings (projectId)\nrun_purple_team_sim   &mdash; Attack-defense gap analysis (target, scenario)\nget_purple_team_results &mdash; Get simulation results (simId)\nanalyze_binary        &mdash; Binary malware analysis (filePath, aiAnalysis)\ncreate_tunnel         &mdash; SSH tunnel (forward/reverse/dynamic)\nmanage_callback_listener &mdash; OOB callback listener (start/stop/status)\ncheck_ai_security        &mdash; AI/LLM security posture (OWASP LLM Top 10)\nautonomous_pentest       &mdash; P-E-R autonomous pentest (dual causal graph)</div>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">35 MCP Tools:</p>' +
+      '<div class="code-block" style="margin-bottom:8px;font-size:11px;">check_posture         &mdash; Security posture score + breakdown\nscan_ports            &mdash; Nmap port scan (target, ports)\nscan_vulnerabilities  &mdash; Nuclei scan (target, severity)\ncheck_ssl             &mdash; SSL certificate check (domain)\nquery_logs            &mdash; Natural language log search\nosint_domain          &mdash; Domain DNS recon\nosint_ip              &mdash; IP geolocation lookup\nosint_reverse_ip      &mdash; Reverse IP lookup (WebOSINT, HackerTarget)\ntriage_alert          &mdash; AI alert triage (title, details, severity)\nhunt_threat           &mdash; Threat hypothesis investigation\nrun_agent             &mdash; Execute security agent (slug, input)\nlaunch_campaign       &mdash; Multi-agent campaign (goal, maxAgents)\ngenerate_report       &mdash; Report generation (type)\ncompliance_check      &mdash; Framework compliance check\nlist_findings         &mdash; Get vulnerability findings\nincident_create       &mdash; Create security incident\nrun_code_audit        &mdash; AI code vulnerability scan (target, languages)\nget_code_audit_results&mdash; Get code audit findings (scanId)\ndetect_waf            &mdash; WAF/CDN fingerprinting (target, probeMode)\nlist_proxy_nodes      &mdash; List ephemeral proxy nodes\ncreate_proxy_node     &mdash; Create disposable Codespace proxy\nstart_proxy_tunnel    &mdash; Start SOCKS5 tunnel through proxy\nplan_proxy_infrastructure &mdash; AI proxy infrastructure planning\nvalidate_exploitability &mdash; MUST-GATE exploitability validation (Raptor)\nadversarial_analysis  &mdash; Deep adversarial security analysis (Raptor)\nrun_pentest_command   &mdash; Execute pentest command (commandId, params)\nget_pentest_results   &mdash; Get pentest project findings (projectId)\nrun_purple_team_sim   &mdash; Attack-defense gap analysis (target, scenario)\nget_purple_team_results &mdash; Get simulation results (simId)\nanalyze_binary        &mdash; Binary malware analysis (filePath, aiAnalysis)\ncreate_tunnel         &mdash; SSH tunnel (forward/reverse/dynamic)\nmanage_callback_listener &mdash; OOB callback listener (start/stop/status)\ncheck_ai_security        &mdash; AI/LLM security posture (OWASP LLM Top 10)\nautonomous_pentest       &mdash; P-E-R autonomous pentest (dual causal graph)\ncheck_server_hardening   &mdash; Server hardening audit (SSH/firewall/IDS/kernel)</div>' +
 
       '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Connecting External AI:</p>' +
       '<p>Click <strong>Connect to Claude</strong> for setup instructions:</p>' +
       '<div class="code-block" style="margin-bottom:8px;"># Claude Code\nclaude mcp add vigil --transport http http://localhost:4100/mcp\n\n# Claude Desktop config:\n{ "mcpServers": { "vigil": { "url": "http://localhost:4100/mcp" } } }\n\n# cURL test:\ncurl -X POST http://localhost:4100/mcp -H "Content-Type: application/json" \\\n  -d \'{"jsonrpc":"2.0","method":"tools/list","id":1}\'</div>' +
-      '<p><strong>Q: What is MCP?</strong><br>A: Model Context Protocol is a standard for AI assistants to interact with external tools. Vigil exposes 24 security tools, 6 live resources, and 7 prompt workflows via MCP. Claude (or any MCP-compatible AI) can run scans, check posture, triage alerts, hunt threats, audit code, detect WAFs, manage proxy infrastructure, validate exploitability, run adversarial analysis, and generate reports.</p>' +
+      '<p><strong>Q: What is MCP?</strong><br>A: Model Context Protocol is a standard for AI assistants to interact with external tools. Vigil exposes 35 security tools, 7 live resources, and 8 prompt workflows via MCP. Claude (or any MCP-compatible AI) can run scans, check posture, triage alerts, hunt threats, audit code, detect WAFs, manage proxy infrastructure, validate exploitability, run adversarial analysis, autonomous pentests, server hardening audits, and generate reports.</p>' +
       '<p><strong>Q: Why do some MCP tools take a while?</strong><br>A: AI-powered tools (triage_alert, hunt_threat, generate_report, compliance_check, run_agent, launch_campaign, plan_proxy_infrastructure, validate_exploitability, adversarial_analysis) use the configured AI provider and may take 15-120 seconds. Scanner tools (scan_ports, scan_vulnerabilities) depend on scan complexity. The MCP test endpoint supports up to 5 minute timeouts.</p>' +
       '<p><strong>Q: Why does create_proxy_node fail?</strong><br>A: It requires the GitHub CLI (gh) to be authenticated with an account that has Codespaces access. Run <code>gh auth login</code> inside the container to configure.</p>' +
       '<p><strong>Q: How do I use the Adversarial MCP tools?</strong><br>A: Two Raptor-powered tools are in the <strong>Adversarial</strong> category tab:<br>' +
@@ -914,19 +965,41 @@ Views.docs = {
         '<li>Agent run completions (optional)</li>' +
       '</ul>' +
 
-      /* Knowledge Base */
-      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Knowledge Base</h3>' +
-      '<p>Built-in security knowledge base with searchable articles and custom note-taking. Reference documentation for security concepts, procedures, and tools.</p>' +
-      '<div style="margin:12px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden;"><img src="/img/Knowledge_base_with_custom_note_taking.png" alt="Vigil Knowledge Base" style="width:100%;display:block;" loading="lazy"></div>' +
-
-      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">What you see:</p>' +
+      /* Network & Infrastructure (ServerKit-inspired) */
+      '<h3 style="color:var(--cyan);margin:28px 0 8px;font-size:var(--font-size-lg);">Network &amp; Infrastructure (ServerKit-inspired)</h3>' +
+      '<p>Network monitoring with 3 tabs: Network (interfaces, ports, firewall), Services (systemd health), and Hardening (security audit). Inspired by <a href="https://github.com/jhd3197/ServerKit" style="color:var(--cyan);">ServerKit</a>.</p>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Network Tab:</p>' +
       '<ul style="padding-left:20px;list-style:disc;">' +
-        '<li><strong>Search Bar</strong> &mdash; Filter articles by keyword.</li>' +
-        '<li><strong>Category Tabs</strong> &mdash; All, Vulnerabilities, Techniques, Tools, Procedures, Notes.</li>' +
-        '<li><strong>Article Cards</strong> &mdash; 2-column grid showing category tag (getting-started, concepts, setup), title, preview text.</li>' +
-        '<li><strong>Add Note</strong> &mdash; Create custom notes with markdown support. Saved to data/ store.</li>' +
+        '<li><strong>Network Interfaces</strong> &mdash; All interfaces with IP addresses, netmask, MAC, and CIDR notation.</li>' +
+        '<li><strong>Listening Ports</strong> &mdash; Active connections and listening services via <code style="background:var(--well);padding:1px 4px;border-radius:3px;">ss</code> or <code style="background:var(--well);padding:1px 4px;border-radius:3px;">netstat</code>.</li>' +
+        '<li><strong>Firewall Rules</strong> &mdash; UFW or iptables rules with status, action, direction, and source.</li>' +
       '</ul>' +
-      '<p>Built-in articles include: Getting Started with Vigil, Understanding Security Scores, Scanner Installation, RBAC Roles, and more. Add your own SOPs, runbooks, and investigation notes.</p>',
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Services Tab:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>Stat Cards</strong> &mdash; Total services detected, active (cyan), inactive (gray), failed (orange).</li>' +
+        '<li><strong>Service Table</strong> &mdash; 27+ services checked: nginx, apache2, mysql, postgresql, redis, docker, sshd, fail2ban, cron, rsyslog, postfix, and more. Shows status icon, PID, and active-since timestamp.</li>' +
+        '<li><strong>Requirements</strong> &mdash; Requires Linux with systemd. Docker containers without systemd show empty results (expected). On bare metal, all installed services are detected.</li>' +
+      '</ul>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">Hardening Tab:</p>' +
+      '<ul style="padding-left:20px;list-style:disc;">' +
+        '<li><strong>AI Assessment</strong> &mdash; AI-generated hardening analysis with prioritized remediation steps.</li>' +
+        '<li><strong>Score &amp; Grade</strong> &mdash; 0-100 score with letter grade (A-F). Score = (earned points / total points) &times; 100.</li>' +
+        '<li><strong>Grouped Checklist</strong> &mdash; 16 checks across 7 categories, each with pass/fail icon and severity:</li>' +
+      '</ul>' +
+      '<table class="data-table" style="font-size:var(--font-size-xs);"><thead><tr><th>Category</th><th>Checks</th></tr></thead><tbody>' +
+        '<tr><td style="color:var(--text-primary);">SSH</td><td>Root login disabled, password auth disabled, non-default port, protocol 2</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Firewall</td><td>Firewall active (ufw or firewalld)</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">IDS</td><td>Fail2ban installed, fail2ban running</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Updates</td><td>Packages up to date, unattended-upgrades enabled</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Files</td><td>/etc/shadow perms, /etc/passwd perms, no world-writable in /etc</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Kernel</td><td>ASLR enabled (level 2), core dumps disabled</td></tr>' +
+        '<tr><td style="color:var(--text-primary);">Accounts</td><td>No empty password accounts</td></tr>' +
+      '</tbody></table>' +
+      '<p style="margin-top:8px;">The <strong>Fail2ban</strong> section (within Hardening tab) shows jail list with ban stats, currently banned IPs, and recent failed login attempts.</p>' +
+      '<p style="color:var(--text-primary);font-weight:600;margin:12px 0 4px;">FAQ:</p>' +
+      '<p><strong>Q: Why is the Services tab empty in Docker?</strong><br>A: Docker containers typically don\'t use systemd as PID 1. Services run directly via the entrypoint. Deploy on bare metal or a VM with systemd for full service monitoring.</p>' +
+      '<p><strong>Q: How is the hardening score calculated?</strong><br>A: Each check has a weight (4-10 points) based on security impact. Critical checks (firewall, empty passwords) have higher weight than informational ones (SSH port, core dumps). Score = earned / total &times; 100.</p>' +
+      '<p><strong>Q: Can I improve my score?</strong><br>A: Yes. The AI assessment and each failed check include specific remediation steps. Common improvements: enable firewall (<code style="background:var(--well);padding:1px 4px;border-radius:3px;">ufw enable</code>), harden SSH (<code style="background:var(--well);padding:1px 4px;border-radius:3px;">PermitRootLogin no</code>), start fail2ban (<code style="background:var(--well);padding:1px 4px;border-radius:3px;">systemctl enable --now fail2ban</code>).</p>',
 
 
     /* ===== WORKSPACE & GIT ===== */
@@ -1032,7 +1105,7 @@ Views.docs = {
       '<div class="code-block" style="margin-bottom:8px;">GET  /api/agents              List all agents\nPOST /api/agents              { name, category, description, system_prompt }\nPOST /api/agents/:id/run     { input }  Execute agent (60s timeout)\nGET  /api/agents/:id/runs     Agent run history\nGET  /api/campaigns           List campaigns\nPOST /api/campaigns           { goal, max_agents }  Launch campaign</div>' +
 
       '<h3 style="color:var(--cyan);margin:16px 0 8px;">OSINT</h3>' +
-      '<div class="code-block" style="margin-bottom:8px;">POST /api/osint/domain       { domain }  Full domain recon + AI analysis\nPOST /api/osint/ip           { ip }  IP lookup + port scan + AI analysis\nGET  /api/osint/history       Last 100 lookups</div>' +
+      '<div class="code-block" style="margin-bottom:8px;">POST /api/osint/domain       { domain }  Full domain recon + reverse IP + reputation + AI\nPOST /api/osint/ip           { ip }  IP lookup + dual-source geo + reverse IP + AI\nPOST /api/osint/username     { username }  Username enumeration (26 platforms)\nPOST /api/osint/phone        { number }  Phone intel (E.164, 70+ countries)\nPOST /api/osint/recon        { target, spiderType, stealth }  Web recon crawler\nGET  /api/osint/recon/:id    Get web recon results\nGET  /api/osint/history       Last 100 lookups</div>' +
 
       '<h3 style="color:var(--cyan);margin:16px 0 8px;">Incidents &amp; Playbooks</h3>' +
       '<div class="code-block" style="margin-bottom:8px;">GET  /api/incidents           List incidents\nPOST /api/incidents           { title, severity, description, type }\nPATCH /api/incidents/:id      { status, severity, assignee }\nPOST /api/incidents/:id/respond  AI playbook generation (30s)\nPOST /api/incidents/:id/timeline  { event, detail }\nGET  /api/playbooks           Playbook templates\nPOST /api/playbooks/generate  { description }  AI generation</div>' +
@@ -1043,7 +1116,10 @@ Views.docs = {
       '<h3 style="color:var(--cyan);margin:16px 0 8px;">Log Analysis</h3>' +
       '<div class="code-block" style="margin-bottom:8px;">POST /api/logs/query         { query, source }  NL log search + AI analysis\nGET  /api/logs/sources        Available log sources</div>' +
 
-      '<h3 style="color:var(--cyan);margin:16px 0 8px;">MCP Server (24 tools, 6 resources, 7 prompts)</h3>' +
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">Network &amp; Infrastructure (ServerKit)</h3>' +
+      '<div class="code-block" style="margin-bottom:8px;">GET  /api/network/interfaces   Network interfaces\nGET  /api/network/connections  Active connections (ss/netstat)\nGET  /api/network/firewall     Firewall rules (ufw/iptables)\nGET  /api/network/services     Service health (27+ systemd services)\nGET  /api/network/hardening    Hardening audit (16 checks, score/grade, AI)\nGET  /api/network/fail2ban     Fail2ban jails + failed logins\nGET  /api/network/dns?domain=  DNS lookup (A, AAAA, MX, NS, TXT, CNAME)</div>' +
+
+      '<h3 style="color:var(--cyan);margin:16px 0 8px;">MCP Server (35 tools, 7 resources, 8 prompts)</h3>' +
       '<div class="code-block" style="margin-bottom:8px;">POST /mcp                    MCP JSON-RPC handler (Streamable HTTP)\nPOST /api/mcp/test           { method, params }  GUI test endpoint (5min timeout)\nGET  /api/mcp/info            Server metadata + connection instructions</div>' +
 
       '<h3 style="color:var(--cyan);margin:16px 0 8px;">System</h3>' +
