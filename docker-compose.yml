@@ -20,7 +20,7 @@ services:
     volumes:
       - vigil-data:/app/data
       - /var/run/docker.sock:/var/run/docker.sock
-      - ~/.claude/.credentials.json:/home/vigil/.claude/.credentials.json:ro
+      - ~/.claude:/home/vigil/.claude-host:ro
       - gh-config:/home/vigil/.config/gh
     group_add:
       - "${DOCKER_GID:-0}"

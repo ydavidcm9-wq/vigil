@@ -72,8 +72,15 @@ COPY public/ ./public/
 RUN mkdir -p /app/data/reports /app/data/backups /home/vigil/.config/gh /home/vigil/.claude && \
     chown -R vigil:vigil /app /home/vigil
 
-# Entrypoint: fix ownership of mounted dirs then exec as vigil
-RUN printf '#!/bin/bash\nchown -R vigil:vigil /home/vigil/.claude 2>/dev/null || true\nexec gosu vigil "$@"\n' > /usr/local/bin/entrypoint.sh && \
+# Entrypoint: copy ro-mounted credentials to writable ~/.claude, fix ownership, exec as vigil
+RUN printf '#!/bin/bash\n\
+HOST_DIR="/home/vigil/.claude-host"\n\
+CLAUDE_DIR="/home/vigil/.claude"\n\
+if [ -f "$HOST_DIR/.credentials.json" ]; then\n\
+  cp -f "$HOST_DIR/.credentials.json" "$CLAUDE_DIR/.credentials.json" 2>/dev/null || true\n\
+fi\n\
+chown -R vigil:vigil "$CLAUDE_DIR" 2>/dev/null || true\n\
+exec gosu vigil "$@"\n' > /usr/local/bin/entrypoint.sh && \
     chmod +x /usr/local/bin/entrypoint.sh
 
 # gosu for dropping root after fixing permissions
