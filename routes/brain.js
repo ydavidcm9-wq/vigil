@@ -104,7 +104,24 @@ module.exports = function (app, ctx) {
 
   app.get('/api/brain/sections/:id/context', requireAuth, (req, res) => {
     const ctx = getSectionContext(req.params.id);
-    if (!ctx) return res.status(404).json({ error: 'Section not found' });
+    if (!ctx) {
+      // Return generic context instead of 404 — panel stays useful
+      return res.json({
+        id: req.params.id,
+        name: req.params.id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+        group: 'other',
+        description: 'Vigil security operations section.',
+        capabilities: [],
+        relatedKBDomains: [],
+        relatedActions: [],
+        helpPrompts: [
+          'What can I do in this section?',
+          'How do I improve my security posture?',
+          'Show me recent findings',
+        ],
+        apiEndpoints: [],
+      });
+    }
     res.json(ctx);
   });
 
