@@ -15,9 +15,39 @@
     btn.title = 'Vigil Brain (Ctrl+Shift+B)';
     btn.style.cssText =
       'position:fixed;bottom:36px;right:16px;z-index:9999;width:40px;height:40px;border-radius:50%;' +
-      'background:#ff6b2b;color:white;border:2px solid #1a1a1a;font-size:18px;cursor:pointer;' +
-      'box-shadow:0 2px 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center';
-    btn.addEventListener('click', togglePanel);
+      'background:#ff6b2b;color:white;border:2px solid #1a1a1a;font-size:18px;cursor:grab;' +
+      'box-shadow:0 2px 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;' +
+      'touch-action:none';
+    // Make button draggable — click vs drag distinguished by distance moved
+    (function() {
+      var dragging = false, moved = false, offX = 0, offY = 0, startX = 0, startY = 0;
+      btn.addEventListener('mousedown', function(e) {
+        dragging = true; moved = false;
+        var r = btn.getBoundingClientRect();
+        offX = e.clientX - r.left; offY = e.clientY - r.top;
+        startX = e.clientX; startY = e.clientY;
+        // Convert to top/left
+        btn.style.left = r.left + 'px'; btn.style.top = r.top + 'px';
+        btn.style.right = 'auto'; btn.style.bottom = 'auto';
+        btn.style.cursor = 'grabbing';
+        e.preventDefault();
+      });
+      document.addEventListener('mousemove', function(e) {
+        if (!dragging) return;
+        var dx = e.clientX - startX, dy = e.clientY - startY;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+        var nx = e.clientX - offX, ny = e.clientY - offY;
+        nx = Math.max(0, Math.min(nx, window.innerWidth - 44));
+        ny = Math.max(0, Math.min(ny, window.innerHeight - 44));
+        btn.style.left = nx + 'px'; btn.style.top = ny + 'px';
+      });
+      document.addEventListener('mouseup', function() {
+        if (!dragging) return;
+        dragging = false;
+        btn.style.cursor = 'grab';
+        if (!moved) togglePanel(); // click — didn't drag
+      });
+    })();
     document.body.appendChild(btn);
 
     // ── Panel ─────────────────────────────────────────────
