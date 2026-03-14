@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Port Scanner View */
+/* Vigil v1.1 — Port Scanner View */
 Views['port-scanner'] = {
   init: function() {
     var el = document.getElementById('view-port-scanner');

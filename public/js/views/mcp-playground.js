@@ -1,4 +1,4 @@
-/* Vigil v1.0 — MCP Playground (Model Context Protocol)
+/* Vigil v1.1 — MCP Playground (Model Context Protocol)
  * Interactive playground for 37 tools, 7 resources, 8 prompt workflows.
  * All calls go through POST /api/mcp/test with {method, params}.
  */

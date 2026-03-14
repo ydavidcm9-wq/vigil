@@ -1,4 +1,4 @@
-/* Vigil v1.0 — AI Security Chat View */
+/* Vigil v1.1 — AI Security Chat View */
 Views['ai-chat'] = {
   _messages: [],
 

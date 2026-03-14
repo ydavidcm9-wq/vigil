@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Intel Hub View (replaces Knowledge Base)
+/* Vigil v1.1 — Intel Hub View (replaces Knowledge Base)
    Security RSS feeds, CVE Watch, AI Briefings, CISA KEV */
 Views.knowledge = {
   _tab: 'feed',

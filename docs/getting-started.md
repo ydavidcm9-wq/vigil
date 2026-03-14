@@ -1,4 +1,4 @@
-# Vigil v1.0 -- Getting Started
+# Vigil v1.1 -- Getting Started
 
 ## Installation
 

@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Proxy Nodes View (Ephemeral Infrastructure)
+/* Vigil v1.1 — Proxy Nodes View (Ephemeral Infrastructure)
  * 3 tabs: Proxy Nodes (Codespace SOCKS5) | Tunnels (pgrok-inspired SSH) | Callback Listener (OOB + Payload Hosting)
  */
 Views['proxy-nodes'] = {

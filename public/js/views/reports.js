@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Reports View */
+/* Vigil v1.1 — Reports View */
 Views.reports = {
   init: function() {
     var el = document.getElementById('view-reports');

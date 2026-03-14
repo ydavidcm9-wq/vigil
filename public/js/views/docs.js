@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Documentation View */
+/* Vigil v1.1 — Documentation View */
 Views.docs = {
   _activeSection: 'getting-started',
 

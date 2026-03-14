@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Dashboard View */
+/* Vigil v1.1 — Dashboard View */
 Views.dashboard = {
   _chartInited: false,
 

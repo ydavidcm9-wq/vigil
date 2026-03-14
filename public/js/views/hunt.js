@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Threat Hunt View */
+/* Vigil v1.1 — Threat Hunt View */
 Views.hunt = {
   init: function() {
     var el = document.getElementById('view-hunt');

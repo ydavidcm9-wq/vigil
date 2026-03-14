@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Compliance Frameworks View */
+/* Vigil v1.1 — Compliance Frameworks View */
 Views.compliance = {
   _activeFramework: 'soc2',
 

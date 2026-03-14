@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Audit Log View */
+/* Vigil v1.1 — Audit Log View */
 Views['audit-log'] = {
   init: function() {
     var el = document.getElementById('view-audit-log');

@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Modal System */
+/* Vigil v1.1 — Modal System */
 (function() {
   'use strict';
 

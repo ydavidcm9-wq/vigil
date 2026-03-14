@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Incident Response Playbooks View */
+/* Vigil v1.1 — Incident Response Playbooks View */
 Views.playbooks = {
   init: function() {
     var el = document.getElementById('view-playbooks');

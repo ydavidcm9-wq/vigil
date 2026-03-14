@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Container Security View */
+/* Vigil v1.1 — Container Security View */
 Views['container-security'] = {
   init: function() {
     var el = document.getElementById('view-container-security');

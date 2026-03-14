@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Vulnerability Findings View */
+/* Vigil v1.1 — Vulnerability Findings View */
 Views.findings = {
   _allFindings: [],
 

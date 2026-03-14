@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Threat Feed View */
+/* Vigil v1.1 — Threat Feed View */
 Views.threats = {
   _refreshTimer: null,
 

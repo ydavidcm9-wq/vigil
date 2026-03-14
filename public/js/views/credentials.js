@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Credential Vault View */
+/* Vigil v1.1 — Credential Vault View */
 Views.credentials = {
   init: function() {
     var el = document.getElementById('view-credentials');

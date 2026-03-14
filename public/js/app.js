@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Main Application */
+/* Vigil v1.1 — Main Application */
 (function() {
   'use strict';
 

@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Web Application Scanner View (with WAF Detection) */
+/* Vigil v1.1 — Web Application Scanner View (with WAF Detection) */
 Views['web-scanner'] = {
   _lastWafResult: null,
   _activeTab: 'findings',

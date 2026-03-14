@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Code Audit View (LLM-Driven Vulnerability Scanner + Binary Analysis) */
+/* Vigil v1.1 — Code Audit View (LLM-Driven Vulnerability Scanner + Binary Analysis) */
 Views['code-audit'] = {
   _scanId: null,
   _pollTimer: null,

@@ -1,4 +1,4 @@
-/* Vigil v1.0 — AI Terminal View */
+/* Vigil v1.1 — AI Terminal View */
 Views['ai-terminal'] = {
   _history: [],
   _historyIndex: -1,

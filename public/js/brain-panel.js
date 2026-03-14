@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Brain Context Panel (draggable floating helper) */
+/* Vigil v1.1 — Brain Context Panel (draggable floating helper) */
 (function() {
   'use strict';
 

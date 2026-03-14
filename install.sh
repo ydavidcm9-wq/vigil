@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Vigil v1.0 — Quick Install Script
+# Vigil v1.1 — Quick Install Script
 # Usage: curl -fsSL https://raw.githubusercontent.com/vigil-agency/vigil/main/install.sh | bash
 
 REPO="https://github.com/vigil-agency/vigil.git"

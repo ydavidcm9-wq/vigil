@@ -1,4 +1,4 @@
-# Vigil v1.0 — Ubuntu 24.04 + Node.js 22 + Security Tools
+# Vigil v1.1 — Ubuntu 24.04 + Node.js 22 + Security Tools
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive

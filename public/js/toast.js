@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Toast Notification System */
+/* Vigil v1.1 — Toast Notification System */
 (function() {
   'use strict';
 

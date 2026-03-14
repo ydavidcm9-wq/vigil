@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Vulnerability Scanner View */
+/* Vigil v1.1 — Vulnerability Scanner View */
 Views['vuln-scanner'] = {
   init: function() {
     var el = document.getElementById('view-vuln-scanner');

@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Chart.js Wrappers */
+/* Vigil v1.1 — Chart.js Wrappers */
 (function() {
   'use strict';
 

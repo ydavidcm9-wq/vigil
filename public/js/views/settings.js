@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Settings View */
+/* Vigil v1.1 — Settings View */
 Views.settings = {
   _activeTab: 'account',
 

@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Brain Chat View (AI Brain with KB, Memory, Actions) */
+/* Vigil v1.1 — Brain Chat View (AI Brain with KB, Memory, Actions) */
 Views['brain-chat'] = {
   _messages: [],
   _conversationHistory: [],

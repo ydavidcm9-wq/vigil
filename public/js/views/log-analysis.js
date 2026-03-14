@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Log Analysis View */
+/* Vigil v1.1 — Log Analysis View */
 Views['log-analysis'] = {
   _queryHistory: [],
 

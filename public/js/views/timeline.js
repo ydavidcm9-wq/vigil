@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Attack Timeline View */
+/* Vigil v1.1 — Attack Timeline View */
 Views.timeline = {
   _currentRange: '24h',
   _lastEvents: [],

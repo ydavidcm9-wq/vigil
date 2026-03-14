@@ -1,4 +1,4 @@
-/* Vigil v1.0 — OSINT Reconnaissance View */
+/* Vigil v1.1 — OSINT Reconnaissance View */
 Views.osint = {
   _lastDomainData: null,
 

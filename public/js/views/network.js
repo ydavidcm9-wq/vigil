@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Network Overview View (ServerKit-inspired service + hardening tabs) */
+/* Vigil v1.1 — Network Overview View (ServerKit-inspired service + hardening tabs) */
 Views.network = {
   init: function() {
     var el = document.getElementById('view-network');

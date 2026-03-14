@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Notification Center View */
+/* Vigil v1.1 — Notification Center View */
 Views.notifications = {
   init: function() {
     var el = document.getElementById('view-notifications');

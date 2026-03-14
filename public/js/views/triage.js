@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Alert Triage View */
+/* Vigil v1.1 — Alert Triage View */
 Views.triage = {
   init: function() {
     var el = document.getElementById('view-triage');

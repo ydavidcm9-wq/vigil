@@ -1,4 +1,4 @@
-/* Vigil v1.0 — DNS Security View */
+/* Vigil v1.1 — DNS Security View */
 Views['dns-security'] = {
   init: function() {
     var el = document.getElementById('view-dns-security');

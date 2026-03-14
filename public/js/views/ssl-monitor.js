@@ -1,4 +1,4 @@
-/* Vigil v1.0 — SSL Monitor View */
+/* Vigil v1.1 — SSL Monitor View */
 Views['ssl-monitor'] = {
   init: function() {
     var el = document.getElementById('view-ssl-monitor');

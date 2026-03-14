@@ -1,4 +1,4 @@
-// Vigil v1.0 — The Security Agency That Never Sleeps
+// Vigil v1.1 — The Security Agency That Never Sleeps
 // .env loader (must be first — before any requires that read process.env)
 const envPath = require('path').join(__dirname, '.env');
 try {
@@ -298,7 +298,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Load all route modules
-console.log('\n  Vigil v1.0 — Loading routes...');
+console.log('\n  Vigil v1.1 — Loading routes...');
 const routesDir = path.join(__dirname, 'routes');
 if (fs.existsSync(routesDir)) {
   const routeFiles = fs.readdirSync(routesDir).filter(f => f.endsWith('.js'));
@@ -343,7 +343,7 @@ io.on('connection', async (socket) => {
     system: systemInfo,
     posture: postureScore,
     threats: recentThreats,
-    version: '1.0.0'
+    version: '1.1.0'
   });
 
   // Terminal + Claude events are handled by routes/claude.js (per-socket pty tracking)
@@ -353,7 +353,7 @@ io.on('connection', async (socket) => {
       system: getSystemInfo(),
       posture: ctx.getPostureScore ? ctx.getPostureScore() : { score: 0, grade: 'N/A' },
       threats: ctx.getRecentThreats ? ctx.getRecentThreats() : [],
-      version: '1.0.0'
+      version: '1.1.0'
     });
   });
 
@@ -455,7 +455,7 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 const PORT = parseInt(process.env.VIGIL_PORT || '4100', 10);
 server.listen(PORT, () => {
   console.log('  ========================================');
-  console.log('  Vigil v1.0 — Security Operations Center');
+  console.log('  Vigil v1.1 — Security Operations Center');
   console.log('  ========================================');
   console.log('  Port:     ' + PORT);
   console.log('  Database: ' + (pool ? 'connected' : 'unavailable'));

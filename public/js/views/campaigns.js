@@ -1,4 +1,4 @@
-/* Vigil v1.0 — Campaigns + Purple Team Simulator (Decepticon-inspired) */
+/* Vigil v1.1 — Campaigns + Purple Team Simulator (Decepticon-inspired) */
 Views.campaigns = {
   _tab: 'campaigns',
   _simulations: [],
