@@ -2,16 +2,16 @@
 
 :root {
   --canvas: #0a0a0a;
-  --surface: rgba(18, 18, 18, 0.65);
+  --surface: rgba(18, 18, 18, 0.92);
   --surface-solid: #121212;
-  --surface-hover: rgba(26, 26, 26, 0.80);
-  --well: rgba(0, 0, 0, 0.35);
+  --surface-hover: rgba(26, 26, 26, 0.95);
+  --well: rgba(0, 0, 0, 0.50);
   --text-primary: #e4e4e7;
-  --text-secondary: #8b8b92;
-  --text-tertiary: #52525a;
-  --border: rgba(255, 255, 255, 0.06);
-  --border-glass: rgba(255, 255, 255, 0.08);
-  --border-top: rgba(255, 255, 255, 0.12);
+  --text-secondary: #a1a1a8;
+  --text-tertiary: #6b6b73;
+  --border: rgba(255, 255, 255, 0.10);
+  --border-glass: rgba(255, 255, 255, 0.14);
+  --border-top: rgba(255, 255, 255, 0.18);
   --accent: #ff6b2b;
   --accent-dim: rgba(255, 107, 43, 0.15);
   --accent-glow: rgba(255, 107, 43, 0.25);

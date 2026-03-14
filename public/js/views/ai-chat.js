@@ -62,19 +62,26 @@ Views['ai-chat'] = {
     var sendBtn = document.getElementById('ai-chat-send');
     sendBtn.disabled = true;
 
-    fetch('/api/claude/run', {
+    fetch('/api/brain/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({
-        prompt: message,
-        context: 'security',
-        history: this._messages.slice(-10)
+        message: message,
+        sectionContext: 'ai-chat',
+        conversationHistory: this._messages.slice(-10)
       })
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      var response = data.output || data.result || data.text || 'No response from AI.';
+      var response = data.response || data.output || data.result || data.text || 'No response from AI.';
+      // Append source citations if available
+      if (data.sources && data.sources.length) {
+        response += '\n\n**Sources:** ' + data.sources.map(function(s) { return '[' + s.id + '] ' + s.title; }).join(', ');
+      }
+      if (data.fromKB) {
+        response = '[Instant KB Answer]\n\n' + response;
+      }
       Views['ai-chat']._messages.push({ role: 'assistant', content: response });
 
       var pending = document.getElementById('ai-chat-pending');

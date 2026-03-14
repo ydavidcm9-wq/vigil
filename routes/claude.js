@@ -25,10 +25,46 @@ module.exports = function (app, ctx) {
   const { io, execCommand, requireAuth, requireRole, REPO_DIR } = ctx;
   let activeClaudeProc = null;
 
+  // Brain integration — enrich prompts with security KB context
+  let brain = null;
+  try { brain = require('../lib/ai/brain'); } catch (e) { console.warn('  Brain not available:', e.message); }
+
   // Expose for socket events
   ctx.activeClaudeProc = () => activeClaudeProc;
 
-  function runClaude(prompt) {
+  /**
+   * Enrich a user prompt with brain context (KB hits, section context, memory)
+   * Returns enriched prompt string for CLI-based providers
+   */
+  async function enrichWithBrain(prompt, userId, sectionContext) {
+    if (!brain) return prompt;
+    try {
+      // Check for direct KB answer first (instant, no LLM needed)
+      const direct = brain.tryDirectKBAnswer(prompt);
+      if (direct) {
+        // Return KB answer directly — no need to call LLM
+        return { directAnswer: direct.response, sources: direct.sources };
+      }
+
+      // Build brain system prompt for context enrichment
+      const { buildSystemPrompt } = require('../lib/ai/brain/system-prompt-builder');
+      const ctx = await buildSystemPrompt({
+        userId: userId || 'default',
+        currentSection: sectionContext,
+        userQuery: prompt,
+        maxTokenBudget: 2000,
+      });
+
+      // Prepend brain context to prompt for CLI providers
+      const enriched = `[SYSTEM CONTEXT]\n${ctx.systemPrompt}\n\n[USER QUERY]\n${prompt}`;
+      return { enrichedPrompt: enriched, sources: ctx.kbHits, actions: ctx.suggestedActions };
+    } catch (e) {
+      // Brain enrichment failed — fall back to raw prompt
+      return prompt;
+    }
+  }
+
+  function runClaude(prompt, userId, sectionContext) {
     const provider = getAIProvider();
     if (provider === 'none') {
       io.emit('claude_output', '\r\n[INFO] AI provider is disabled. Configure in Settings > AI Provider.\r\n');
@@ -39,34 +75,67 @@ module.exports = function (app, ctx) {
       return;
     }
 
-    const { cmd, args } = getAICommand(provider, prompt);
-    io.emit('claude_output', `\r\n[STARTING] ${cmd} "${prompt.substring(0, 80)}..."\r\n\r\n`);
+    // Enrich with brain context asynchronously, then run
+    enrichWithBrain(prompt, userId, sectionContext).then(result => {
+      // If brain returned a direct KB answer, emit it immediately
+      if (result && result.directAnswer) {
+        io.emit('claude_output', '\r\n\x1b[36m[VIGIL BRAIN — Instant KB Answer]\x1b[0m\r\n\r\n');
+        io.emit('claude_output', result.directAnswer + '\r\n');
+        if (result.sources && result.sources.length) {
+          io.emit('claude_output', '\r\n\x1b[33mSources: ' + result.sources.map(s => '[' + s.id + '] ' + s.title).join(', ') + '\x1b[0m\r\n');
+        }
+        io.emit('claude_done', { code: 0, output: result.directAnswer, prompt });
+        return;
+      }
 
-    const child = spawn(cmd, args, { cwd: REPO_DIR, env: { ...process.env }, shell: true });
-    activeClaudeProc = child;
-    let output = '';
+      const finalPrompt = (result && result.enrichedPrompt) || prompt;
+      const { cmd, args } = getAICommand(provider, finalPrompt);
+      io.emit('claude_output', `\r\n[STARTING] ${cmd} "${prompt.substring(0, 80)}..."\r\n\r\n`);
 
-    child.stdout.on('data', (d) => {
-      const t = d.toString();
-      output += t;
-      io.emit('claude_output', t);
-    });
+      const child = spawn(cmd, args, { cwd: REPO_DIR, env: { ...process.env }, shell: true });
+      activeClaudeProc = child;
+      let output = '';
 
-    child.stderr.on('data', (d) => {
-      const t = d.toString();
-      output += t;
-      io.emit('claude_output', t);
-    });
+      child.stdout.on('data', (d) => {
+        const t = d.toString();
+        output += t;
+        io.emit('claude_output', t);
+      });
 
-    child.on('close', (code) => {
-      activeClaudeProc = null;
-      io.emit('claude_done', { code, output, prompt });
-    });
+      child.stderr.on('data', (d) => {
+        const t = d.toString();
+        output += t;
+        io.emit('claude_output', t);
+      });
 
-    child.on('error', (err) => {
-      activeClaudeProc = null;
-      io.emit('claude_output', `\r\n[ERROR] ${err.message}\r\n`);
-      io.emit('claude_done', { code: 1, output: err.message, prompt });
+      child.on('close', (code) => {
+        activeClaudeProc = null;
+        io.emit('claude_done', { code, output, prompt });
+        // Extract memories from conversation asynchronously
+        if (brain && userId) {
+          try {
+            const { extractMemories } = require('../lib/ai/brain/memory');
+            setImmediate(() => extractMemories(userId, prompt, output, sectionContext));
+          } catch {}
+        }
+      });
+
+      child.on('error', (err) => {
+        activeClaudeProc = null;
+        io.emit('claude_output', `\r\n[ERROR] ${err.message}\r\n`);
+        io.emit('claude_done', { code: 1, output: err.message, prompt });
+      });
+    }).catch(() => {
+      // If enrichment fails, run without brain
+      const { cmd, args } = getAICommand(provider, prompt);
+      io.emit('claude_output', `\r\n[STARTING] ${cmd} "${prompt.substring(0, 80)}..."\r\n\r\n`);
+      const child = spawn(cmd, args, { cwd: REPO_DIR, env: { ...process.env }, shell: true });
+      activeClaudeProc = child;
+      let output = '';
+      child.stdout.on('data', (d) => { const t = d.toString(); output += t; io.emit('claude_output', t); });
+      child.stderr.on('data', (d) => { const t = d.toString(); output += t; io.emit('claude_output', t); });
+      child.on('close', (code) => { activeClaudeProc = null; io.emit('claude_done', { code, output, prompt }); });
+      child.on('error', (err) => { activeClaudeProc = null; io.emit('claude_output', `\r\n[ERROR] ${err.message}\r\n`); io.emit('claude_done', { code: 1, output: err.message, prompt }); });
     });
   }
 
@@ -126,26 +195,62 @@ module.exports = function (app, ctx) {
   ctx.askAI = askAI;
   ctx.askAIJSON = askAIJSON;
 
-  // POST /api/claude/run — run prompt through Claude CLI
+  // POST /api/claude/run — run prompt through Claude CLI (brain-enriched)
   app.post('/api/claude/run', requireRole('analyst'), (req, res) => {
-    const { prompt } = req.body;
+    const { prompt, sectionContext } = req.body;
     if (!prompt) return res.status(400).json({ error: 'prompt required' });
     if (activeClaudeProc) return res.status(409).json({ error: 'AI already running' });
-    runClaude(prompt);
+    const userId = req.user ? req.user.username : 'default';
+    runClaude(prompt, userId, sectionContext);
     res.json({ started: true });
   });
 
-  // POST /api/claude/ask — one-shot AI query (returns response)
+  // POST /api/claude/ask — one-shot AI query (brain-enriched, returns response)
   app.post('/api/claude/ask', requireRole('analyst'), async (req, res) => {
-    const { prompt } = req.body;
+    const { prompt, sectionContext } = req.body;
     if (!prompt) return res.status(400).json({ error: 'prompt required' });
+
+    const userId = req.user ? req.user.username : 'default';
+
+    // Try brain direct answer first (instant KB lookup)
+    if (brain) {
+      try {
+        const direct = brain.tryDirectKBAnswer(prompt);
+        if (direct) {
+          return res.json({
+            response: direct.response,
+            sources: (direct.sources || []).map(s => ({ id: s.id, title: s.title })),
+            fromKB: true,
+          });
+        }
+      } catch {}
+    }
 
     const provider = getAIProvider();
     if (provider === 'none') return res.json({ response: 'AI provider is disabled.', fallback: true });
 
     try {
-      const response = await askAI(prompt, { timeout: 30000 });
-      res.json({ response: response || 'No response from AI', cached: false });
+      // Enrich with brain context
+      const result = await enrichWithBrain(prompt, userId, sectionContext);
+      const finalPrompt = (result && result.enrichedPrompt) || prompt;
+
+      const response = await askAI(finalPrompt, { timeout: 30000 });
+
+      // Extract memories async
+      if (brain && response) {
+        setImmediate(() => {
+          try {
+            const { extractMemories } = require('../lib/ai/brain/memory');
+            extractMemories(userId, prompt, response, sectionContext);
+          } catch {}
+        });
+      }
+
+      res.json({
+        response: response || 'No response from AI',
+        sources: (result && result.sources) ? result.sources.map(s => ({ id: s.id, title: s.title })) : [],
+        cached: false,
+      });
     } catch (e) {
       res.json({ response: 'AI unavailable: ' + e.message, fallback: true });
     }
@@ -339,9 +444,9 @@ module.exports = function (app, ctx) {
     });
 
     socket.on('claude_run', (data) => {
-      // Only analyst+ roles can run AI commands
+      // Only analyst+ roles can run AI commands (brain-enriched)
       if (socket.user && socket.user.role !== 'viewer' && data && data.prompt) {
-        runClaude(data.prompt);
+        runClaude(data.prompt, socket.user.username, data.sectionContext);
       }
     });
 
