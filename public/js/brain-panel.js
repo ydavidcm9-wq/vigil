@@ -1,54 +1,72 @@
-/* Vigil v1.0 — Brain Context Panel (floating sidebar helper) */
+/* Vigil v1.0 — Brain Context Panel (draggable floating helper) */
 (function() {
   'use strict';
 
   var panel = null;
+  var btn = null;
   var isOpen = false;
   var currentSection = null;
 
+  // Drag state
+  var isDragging = false;
+  var dragOffsetX = 0;
+  var dragOffsetY = 0;
+
   function createPanel() {
-    // Floating toggle button
-    var btn = document.createElement('button');
+    // Floating toggle button — above status bar
+    btn = document.createElement('button');
     btn.id = 'brain-panel-toggle';
-    btn.innerHTML = '&#x1f6e1;'; // shield emoji
+    btn.innerHTML = '&#x1f6e1;';
     btn.title = 'Vigil Brain (Ctrl+Shift+B)';
-    btn.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;width:48px;height:48px;border-radius:50%;' +
-      'background:var(--accent);color:white;border:none;font-size:22px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3);' +
-      'transition:transform 0.2s;display:flex;align-items:center;justify-content:center';
+    btn.style.cssText =
+      'position:fixed;bottom:36px;right:16px;z-index:9999;width:40px;height:40px;border-radius:50%;' +
+      'background:#ff6b2b;color:white;border:2px solid #1a1a1a;font-size:18px;cursor:pointer;' +
+      'box-shadow:0 2px 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center';
     btn.addEventListener('click', togglePanel);
-    btn.addEventListener('mouseenter', function() { btn.style.transform = 'scale(1.1)'; });
-    btn.addEventListener('mouseleave', function() { btn.style.transform = 'scale(1)'; });
     document.body.appendChild(btn);
 
-    // Panel
+    // Panel — draggable
     panel = document.createElement('div');
     panel.id = 'brain-panel';
-    panel.style.cssText = 'position:fixed;bottom:80px;right:24px;z-index:9998;width:360px;max-height:500px;' +
-      'background:#1a1a1a;border:1px solid rgba(255,107,43,0.3);border-radius:12px;' +
-      'box-shadow:0 8px 32px rgba(0,0,0,0.7),0 0 0 1px rgba(0,0,0,0.5);' +
+    panel.style.cssText =
+      'position:fixed;bottom:84px;right:16px;z-index:9998;width:340px;height:420px;' +
+      'background:#141414;border:1px solid rgba(255,107,43,0.35);border-radius:10px;' +
+      'box-shadow:0 8px 32px rgba(0,0,0,0.8),0 0 0 1px rgba(0,0,0,0.6);' +
       'display:none;flex-direction:column;overflow:hidden';
 
     panel.innerHTML =
-      '<div style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between;align-items:center;background:#1e1e1e">' +
-        '<strong id="brain-panel-title" style="color:#e4e4e7">Vigil Brain</strong>' +
-        '<button id="brain-panel-close" style="background:none;border:none;color:#8b8b92;cursor:pointer;font-size:18px">&times;</button>' +
+      // Header — drag handle
+      '<div id="brain-panel-header" style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.1);' +
+        'display:flex;justify-content:space-between;align-items:center;background:#1a1a1a;cursor:move;user-select:none;flex-shrink:0">' +
+        '<strong id="brain-panel-title" style="color:#e4e4e7;font-size:12px">&#x1f6e1; Vigil Brain</strong>' +
+        '<button id="brain-panel-close" style="background:none;border:none;color:#666;cursor:pointer;font-size:16px;line-height:1">&times;</button>' +
       '</div>' +
-      '<div id="brain-panel-body" style="flex:1;overflow-y:auto;padding:12px 16px;font-size:13px;color:#e4e4e7;background:#1a1a1a">' +
+      // Body
+      '<div id="brain-panel-body" style="flex:1;overflow-y:auto;padding:10px 12px;font-size:12px;color:#ccc;background:#141414">' +
         '<div id="brain-panel-context"></div>' +
-        '<div id="brain-panel-prompts" style="margin-top:12px"></div>' +
+        '<div id="brain-panel-prompts" style="margin-top:10px"></div>' +
       '</div>' +
-      '<div style="padding:8px 12px;border-top:1px solid rgba(255,255,255,0.1);display:flex;gap:6px;background:#1e1e1e">' +
-        '<input type="text" id="brain-panel-input" class="form-input" placeholder="Quick question..." style="flex:1;font-size:12px;background:#111;color:#e4e4e7;border:1px solid rgba(255,255,255,0.14);border-radius:6px;padding:6px 10px">' +
-        '<button id="brain-panel-send" class="btn btn-primary btn-sm" style="font-size:12px">Ask</button>' +
+      // Input
+      '<div style="padding:6px 10px;border-top:1px solid rgba(255,255,255,0.1);display:flex;gap:6px;background:#1a1a1a;flex-shrink:0">' +
+        '<input type="text" id="brain-panel-input" placeholder="Quick question..." ' +
+          'style="flex:1;font-size:11px;background:#0e0e0e;color:#e4e4e7;border:1px solid rgba(255,255,255,0.12);border-radius:5px;padding:5px 8px;outline:none;font-family:inherit">' +
+        '<button id="brain-panel-send" class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px">Ask</button>' +
       '</div>';
 
     document.body.appendChild(panel);
 
+    // Events
     document.getElementById('brain-panel-close').addEventListener('click', togglePanel);
     document.getElementById('brain-panel-send').addEventListener('click', sendQuickQuestion);
     document.getElementById('brain-panel-input').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') { e.preventDefault(); sendQuickQuestion(); }
     });
+
+    // Drag support on header
+    var header = document.getElementById('brain-panel-header');
+    header.addEventListener('mousedown', startDrag);
+    document.addEventListener('mousemove', onDrag);
+    document.addEventListener('mouseup', stopDrag);
 
     // Keyboard shortcut
     document.addEventListener('keydown', function(e) {
@@ -59,6 +77,36 @@
     });
   }
 
+  // ── Drag ──────────────────────────────────────────────────
+  function startDrag(e) {
+    if (e.target.id === 'brain-panel-close') return;
+    isDragging = true;
+    var rect = panel.getBoundingClientRect();
+    dragOffsetX = e.clientX - rect.left;
+    dragOffsetY = e.clientY - rect.top;
+    panel.style.transition = 'none';
+    e.preventDefault();
+  }
+
+  function onDrag(e) {
+    if (!isDragging) return;
+    var x = e.clientX - dragOffsetX;
+    var y = e.clientY - dragOffsetY;
+    // Clamp to viewport
+    x = Math.max(0, Math.min(x, window.innerWidth - 340));
+    y = Math.max(0, Math.min(y, window.innerHeight - 100));
+    // Switch from bottom/right to top/left positioning for drag
+    panel.style.left = x + 'px';
+    panel.style.top = y + 'px';
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
+  }
+
+  function stopDrag() {
+    isDragging = false;
+  }
+
+  // ── Toggle ────────────────────────────────────────────────
   function togglePanel() {
     isOpen = !isOpen;
     if (panel) {
@@ -67,8 +115,8 @@
     }
   }
 
+  // ── Context ───────────────────────────────────────────────
   function refreshContext() {
-    // Get current section from app state
     var section = getCurrentSection();
     if (section === currentSection && isOpen) return;
     currentSection = section;
@@ -78,8 +126,8 @@
     var promptsEl = document.getElementById('brain-panel-prompts');
 
     if (!section) {
-      if (titleEl) titleEl.textContent = 'Vigil Brain';
-      if (contextEl) contextEl.innerHTML = '<em>Navigate to a section for contextual help.</em>';
+      if (titleEl) titleEl.innerHTML = '&#x1f6e1; Vigil Brain';
+      if (contextEl) contextEl.innerHTML = '<em style="color:#666">Navigate to a section for contextual help.</em>';
       if (promptsEl) promptsEl.innerHTML = '';
       return;
     }
@@ -90,36 +138,41 @@
     .then(function(r) { return r.json(); })
     .then(function(ctx) {
       if (ctx.error) {
-        if (contextEl) contextEl.innerHTML = '<em>No context available for this section.</em>';
+        if (contextEl) contextEl.innerHTML = '<em style="color:#666">No context for this section.</em>';
         return;
       }
 
-      if (titleEl) titleEl.textContent = ctx.name || section;
+      if (titleEl) titleEl.innerHTML = '&#x1f6e1; ' + esc(ctx.name || section);
 
       if (contextEl) {
         contextEl.innerHTML =
-          '<div style="margin-bottom:8px;color:#a1a1a8">' + escapeHtml(ctx.description || '') + '</div>' +
-          '<div style="margin-bottom:8px;color:#e4e4e7"><strong>Capabilities:</strong></div>' +
-          '<ul style="margin:0;padding-left:16px;color:#a1a1a8">' +
-          (ctx.capabilities || []).map(function(c) { return '<li>' + escapeHtml(c) + '</li>'; }).join('') +
+          '<div style="margin-bottom:8px;color:#999;line-height:1.5">' + esc(ctx.description || '') + '</div>' +
+          '<div style="margin-bottom:4px;color:#ccc;font-weight:600">Capabilities:</div>' +
+          '<ul style="margin:0 0 0 14px;padding:0;color:#999;line-height:1.6">' +
+          (ctx.capabilities || []).map(function(c) { return '<li style="list-style:disc">' + esc(c) + '</li>'; }).join('') +
           '</ul>';
       }
 
       if (promptsEl && ctx.helpPrompts && ctx.helpPrompts.length) {
         promptsEl.innerHTML =
-          '<div style="margin-bottom:6px"><strong>Suggested Questions:</strong></div>' +
+          '<div style="margin-bottom:4px;color:#ccc;font-weight:600">Try asking:</div>' +
           ctx.helpPrompts.map(function(p) {
-            return '<button class="btn btn-ghost btn-sm" style="font-size:11px;text-align:left;width:100%;margin-bottom:4px;white-space:normal" ' +
-              'onclick="document.getElementById(\'brain-panel-input\').value=\'' + p.replace(/'/g, "\\'") + '\';document.getElementById(\'brain-panel-send\').click()">' +
-              escapeHtml(p) + '</button>';
+            return '<div class="brain-prompt-chip" style="padding:4px 8px;margin:3px 0;background:#1e1e1e;border:1px solid rgba(255,255,255,0.08);' +
+              'border-radius:5px;cursor:pointer;font-size:11px;color:#aaa;transition:background 0.15s" ' +
+              'onmouseenter="this.style.background=\'#252525\';this.style.color=\'#e4e4e7\'" ' +
+              'onmouseleave="this.style.background=\'#1e1e1e\';this.style.color=\'#aaa\'" ' +
+              'onclick="document.getElementById(\'brain-panel-input\').value=\'' + p.replace(/'/g, "\\'") +
+              '\';document.getElementById(\'brain-panel-send\').click()">' +
+              esc(p) + '</div>';
           }).join('');
       }
     })
     .catch(function() {
-      if (contextEl) contextEl.innerHTML = '<em>Could not load context.</em>';
+      if (contextEl) contextEl.innerHTML = '<em style="color:#666">Could not load context.</em>';
     });
   }
 
+  // ── Quick Question ────────────────────────────────────────
   function sendQuickQuestion() {
     var input = document.getElementById('brain-panel-input');
     var message = input.value.trim();
@@ -128,15 +181,15 @@
 
     var body = document.getElementById('brain-panel-body');
 
-    // Show user message
+    // User bubble
     var userDiv = document.createElement('div');
-    userDiv.style.cssText = 'background:#ff6b2b;color:white;padding:6px 10px;border-radius:8px;margin:8px 0;font-size:12px;max-width:90%;margin-left:auto';
+    userDiv.style.cssText = 'background:#ff6b2b;color:white;padding:5px 8px;border-radius:6px;margin:6px 0;font-size:11px;max-width:85%;margin-left:auto;word-wrap:break-word';
     userDiv.textContent = message;
     body.appendChild(userDiv);
 
-    // Show loading
+    // Loading
     var loadingDiv = document.createElement('div');
-    loadingDiv.style.cssText = 'padding:6px 10px;font-size:12px;color:#8b8b92';
+    loadingDiv.style.cssText = 'padding:4px 8px;font-size:11px;color:#666';
     loadingDiv.innerHTML = '<em>Thinking...</em>';
     body.appendChild(loadingDiv);
     body.scrollTop = body.scrollHeight;
@@ -144,33 +197,29 @@
     fetch('/api/brain/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: message,
-        sectionContext: currentSection,
-      }),
+      body: JSON.stringify({ message: message, sectionContext: currentSection }),
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       loadingDiv.remove();
 
       var aiDiv = document.createElement('div');
-      aiDiv.style.cssText = 'background:#222;padding:8px 10px;border-radius:8px;margin:8px 0;font-size:12px;color:#e4e4e7';
+      aiDiv.style.cssText = 'background:#1e1e1e;padding:6px 8px;border-radius:6px;margin:6px 0;font-size:11px;color:#ccc;line-height:1.5;word-wrap:break-word;border:1px solid rgba(255,255,255,0.06)';
 
-      var html = escapeHtml(data.response || data.error || 'No response');
-      html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-      html = html.replace(/`([^`]+)`/g, '<code style="background:#333;padding:1px 4px;border-radius:3px">$1</code>');
+      var html = esc(data.response || data.error || 'No response');
+      html = html.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:#e4e4e7">$1</strong>');
+      html = html.replace(/`([^`]+)`/g, '<code style="background:#2a2a2a;padding:1px 3px;border-radius:2px;font-size:10px">$1</code>');
       html = html.replace(/\n/g, '<br>');
 
       if (data.fromKB) {
-        html = '<span style="font-size:10px;color:#4ade80">&#x26a1; KB Answer</span><br>' + html;
+        html = '<span style="font-size:9px;color:#4ade80;font-weight:600">&#x26a1; KB Answer</span><br>' + html;
       }
 
-      // Action buttons
       if (data.suggestedActions && data.suggestedActions.length) {
-        html += '<div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">';
+        html += '<div style="margin-top:5px;display:flex;gap:3px;flex-wrap:wrap">';
         data.suggestedActions.forEach(function(a) {
-          html += '<button class="btn btn-ghost" style="font-size:10px;padding:2px 6px" onclick="App.navigate(\'' + a.targetSection + '\')">' +
-            escapeHtml(a.name) + '</button>';
+          html += '<span style="font-size:9px;padding:2px 5px;background:#252525;border:1px solid rgba(255,107,43,0.2);border-radius:3px;color:#ff6b2b;cursor:pointer" ' +
+            'onclick="App.navigate(\'' + a.targetSection + '\')">' + esc(a.name) + '</span>';
         });
         html += '</div>';
       }
@@ -182,41 +231,34 @@
     .catch(function(err) {
       loadingDiv.remove();
       var errDiv = document.createElement('div');
-      errDiv.style.cssText = 'padding:6px 10px;font-size:12px;color:#ef4444';
+      errDiv.style.cssText = 'padding:4px 8px;font-size:11px;color:#ef4444';
       errDiv.textContent = 'Error: ' + err.message;
       body.appendChild(errDiv);
     });
   }
 
   function getCurrentSection() {
-    // Try to read from app state
     if (window.App && window.App.currentView) return window.App.currentView;
-    // Fallback: check active sidebar item
     var active = document.querySelector('.nav-item.active');
     if (active) return active.getAttribute('data-view');
     return null;
   }
 
-  function escapeHtml(s) {
+  function esc(s) {
     var d = document.createElement('div');
     d.textContent = s || '';
     return d.innerHTML;
   }
 
-  // Initialize when DOM is ready
+  // Initialize
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', createPanel);
   } else {
     createPanel();
   }
 
-  // Hook into section changes to refresh context
-  var origNavigate = window.App && window.App.navigate;
-  var checkInterval = setInterval(function() {
-    if (window.App && window.App.navigate && window.App.navigate !== origNavigate) {
-      clearInterval(checkInterval);
-    }
-    // Track section changes for brain context
+  // Track section changes
+  setInterval(function() {
     var section = getCurrentSection();
     if (section !== currentSection) {
       window._brainLastSection = section;
@@ -224,7 +266,6 @@
     }
   }, 2000);
 
-  // Expose for external use
   window.BrainPanel = {
     toggle: togglePanel,
     refresh: refreshContext,
