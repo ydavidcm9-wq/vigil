@@ -179,9 +179,18 @@
       credentials: 'same-origin',
     })
     .then(function(r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .catch(function() {
+      // Brain routes not loaded — show generic context
+      return {
+        name: section.replace(/-/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); }),
+        description: 'Ask me anything about security.',
+        capabilities: [],
+        helpPrompts: ['How do I secure my server?', 'What vulnerabilities should I check?', 'Explain this MITRE technique'],
+      };
+    })
     .then(function(ctx) {
-      if (ctx.error) {
-        if (contextEl) contextEl.innerHTML = '<em style="color:#666">No context for this section.</em>';
+      if (!ctx || ctx.error) {
+        if (contextEl) contextEl.innerHTML = '<em style="color:#666">Ask me anything about security.</em>';
         return;
       }
 
@@ -215,6 +224,32 @@
     });
   }
 
+  // ── Brain API with fallback ──────────────────────────────
+  function brainFetch(message, section) {
+    return fetch('/api/brain/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ message: message, sectionContext: section }),
+    }).then(function(r) {
+      if (!r.ok) throw new Error(r.status);
+      return r.json();
+    }).catch(function() {
+      // Fallback to /api/claude/ask if brain routes not loaded
+      return fetch('/api/claude/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ prompt: message }),
+      }).then(function(r) {
+        if (!r.ok) throw new Error('Server returned ' + r.status);
+        return r.json();
+      }).then(function(d) {
+        return { response: d.response, sources: d.sources || [], suggestedActions: [], fromKB: d.fromKB || false };
+      });
+    });
+  }
+
   // ── Quick Question ────────────────────────────────────────
   function sendQuickQuestion() {
     var input = document.getElementById('brain-panel-input');
@@ -235,13 +270,7 @@
     body.appendChild(loadingDiv);
     body.scrollTop = body.scrollHeight;
 
-    fetch('/api/brain/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify({ message: message, sectionContext: currentSection }),
-    })
-    .then(function(r) { if (!r.ok) throw new Error('Server returned ' + r.status); return r.json(); })
+    brainFetch(message, currentSection)
     .then(function(data) {
       loadingDiv.remove();
 

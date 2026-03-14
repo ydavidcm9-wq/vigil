@@ -72,7 +72,20 @@ Views['ai-chat'] = {
         conversationHistory: this._messages.slice(-10)
       })
     })
-    .then(function(r) { if (!r.ok) throw new Error('Server returned ' + r.status); return r.json(); })
+    .then(function(r) {
+      if (!r.ok) throw new Error(r.status);
+      return r.json();
+    })
+    .catch(function() {
+      // Fallback to /api/claude/ask if brain routes not loaded
+      return fetch('/api/claude/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ prompt: message })
+      }).then(function(r) { return r.json(); })
+        .then(function(d) { return { response: d.response, sources: d.sources || [] }; });
+    })
     .then(function(data) {
       var response = data.response || data.output || data.result || data.text || 'No response from AI.';
       // Append source citations if available
