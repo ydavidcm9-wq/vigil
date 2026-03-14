@@ -72,7 +72,7 @@ Views['ai-chat'] = {
         conversationHistory: this._messages.slice(-10)
       })
     })
-    .then(function(r) { return r.json(); })
+    .then(function(r) { if (!r.ok) throw new Error('Server returned ' + r.status); return r.json(); })
     .then(function(data) {
       var response = data.response || data.output || data.result || data.text || 'No response from AI.';
       // Append source citations if available

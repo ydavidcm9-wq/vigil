@@ -94,17 +94,18 @@ module.exports = function (app, ctx) {
     res.json({ sections: getAllSectionIds() });
   });
 
-  app.get('/api/brain/sections/:id/context', requireAuth, (req, res) => {
-    const ctx = getSectionContext(req.params.id);
-    if (!ctx) return res.status(404).json({ error: 'Section not found' });
-    res.json(ctx);
-  });
-
+  // search must come before :id param route
   app.get('/api/brain/sections/search', requireAuth, (req, res) => {
     const { q } = req.query;
     if (!q) return res.status(400).json({ error: 'q is required' });
     const sections = findSectionByQuery(q);
     res.json({ query: q, count: sections.length, sections: sections.slice(0, 5) });
+  });
+
+  app.get('/api/brain/sections/:id/context', requireAuth, (req, res) => {
+    const ctx = getSectionContext(req.params.id);
+    if (!ctx) return res.status(404).json({ error: 'Section not found' });
+    res.json(ctx);
   });
 
   // ── Action Matching ─────────────────────────────────────────

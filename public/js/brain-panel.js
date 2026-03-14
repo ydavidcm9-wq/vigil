@@ -176,8 +176,9 @@
 
     fetch('/api/brain/sections/' + encodeURIComponent(section) + '/context', {
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
     })
-    .then(function(r) { return r.json(); })
+    .then(function(r) { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(function(ctx) {
       if (ctx.error) {
         if (contextEl) contextEl.innerHTML = '<em style="color:#666">No context for this section.</em>';
@@ -237,9 +238,10 @@
     fetch('/api/brain/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
       body: JSON.stringify({ message: message, sectionContext: currentSection }),
     })
-    .then(function(r) { return r.json(); })
+    .then(function(r) { if (!r.ok) throw new Error('Server returned ' + r.status); return r.json(); })
     .then(function(data) {
       loadingDiv.remove();
 
