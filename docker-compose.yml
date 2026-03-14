@@ -16,11 +16,15 @@ services:
       - DOCKER_HOST=unix:///var/run/docker.sock
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - BRIDGE_URL=http://kali-bridge:9877
+      - BRIDGE_SHARED_TOKEN=${BRIDGE_SHARED_TOKEN:-vigil-bridge-token}
     depends_on:
       postgres:
         condition: service_healthy
       ollama:
         condition: service_started
+      kali-bridge:
+        condition: service_healthy
     volumes:
       - vigil-data:/app/data
       - /var/run/docker.sock:/var/run/docker.sock
@@ -28,6 +32,27 @@ services:
       - gh-config:/home/vigil/.config/gh
     group_add:
       - "${DOCKER_GID:-0}"
+    restart: unless-stopped
+    networks:
+      - vigil-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  kali-bridge:
+    build: ./docker/bridge
+    container_name: vigil-kali
+    environment:
+      - PORT=9877
+      - BRIDGE_SHARED_TOKEN=${BRIDGE_SHARED_TOKEN:-vigil-bridge-token}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9877/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     restart: unless-stopped
     networks:
       - vigil-net

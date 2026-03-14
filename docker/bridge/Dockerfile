@@ -1,3 +1,4 @@
+# Vigil v1.1 — Kali Linux Security Bridge
 FROM kalilinux/kali-rolling
 
 LABEL maintainer="Vigil <hello@vigil.agency>"
@@ -20,13 +21,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
     python3-venv \
-    nodejs \
-    npm \
     curl \
     jq \
     ca-certificates \
     supervisor \
-    mcp-kali-server \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Node.js 22 (pinned, matches main container) ───────────────────
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # ── Install Go-based tools (nuclei, subfinder, httpx) ──────────────
