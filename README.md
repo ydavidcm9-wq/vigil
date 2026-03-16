@@ -12,6 +12,7 @@
 [![Node 18+](https://img.shields.io/badge/Node-18%2B-green.svg)](https://nodejs.org)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](Dockerfile)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-cyan.svg)](CONTRIBUTING.md)
+[![Support](https://img.shields.io/badge/♥_Tip_Jar-Support_Vigil-ff6b9d.svg)](https://buy.stripe.com/8x23cu8wj9bvcQZ7z0enS02)
 
 Open-source, AI-powered security operations platform. Vulnerability scanning, autonomous agents, incident response, compliance tracking, and MCP server — all in a single Express.js process.
 
@@ -21,7 +22,7 @@ Nmap + Nuclei + Trivy + Nikto + OpenSSL + DNS
 
 ---
 
-[Website](https://vigil.agency) | [GitHub](https://github.com/vigil-agency/vigil) | [Docs](https://vigil.agency/docs.html) | [Twitter](https://x.com/vigaborofficial)
+[Website](https://vigil.agency) | [GitHub](https://github.com/vigil-agency/vigil) | [Docs](https://vigil.agency/docs.html) | [Twitter](https://x.com/vigaborofficial) | [♥ Tip Jar](https://buy.stripe.com/8x23cu8wj9bvcQZ7z0enS02)
 
 ---
 
